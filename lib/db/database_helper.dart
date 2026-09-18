@@ -64,14 +64,21 @@ class DatabaseHelper {
     return rows.map(DailyLog.fromMap).toList();
   }
 
-  Future<List<DailyLog>> skippedLogs() async {
+  Future<List<DailyLog>> cancelledLogs() async {
     final db = await database;
     final rows = await db.query(
       'daily_logs',
       where: 'status = ?',
-      whereArgs: [LogStatus.skipped.value],
+      whereArgs: [LogStatus.cancelled.value],
       orderBy: 'date DESC, timestamp DESC',
     );
+    return rows.map(DailyLog.fromMap).toList();
+  }
+
+  /// Seluruh log, terbaru dulu. Dipakai untuk kalender, statistik, dan streak.
+  Future<List<DailyLog>> allLogs() async {
+    final db = await database;
+    final rows = await db.query('daily_logs', orderBy: 'date DESC, timestamp DESC');
     return rows.map(DailyLog.fromMap).toList();
   }
 }

@@ -1,25 +1,46 @@
-# Jadwal Harian
+# Jadwal Harian (Daily Track)
 
 Aplikasi Flutter personal untuk melacak kedisiplinan menjalankan jadwal harian (format 24 jam).
+Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi kontennya (template
+23 kegiatan & daftar alasan pembatalan) sesuai spesifikasi tertulis.
 
 ## Fitur
 
-- **Jadwal Harian (Home)** — timeline vertikal ala agenda kertas dari satu template kegiatan tetap (di-*seed* statis di `lib/data/seed_activities.dart`), dengan progres selesai/total di bagian atas.
-- **Tandai selesai / lewati** — setiap kegiatan bisa ditandai selesai, atau dilewati dengan memilih alasan singkat (chip) termasuk opsi teks bebas ("Lainnya").
-- **Riwayat** — daftar kegiatan yang pernah dilewati, terbaru dulu, dengan filter per kegiatan dan per alasan, plus ringkasan kegiatan & alasan yang paling sering muncul.
+- **Hari Ini** — timeline vertikal dari satu template kegiatan tetap (di-*seed* statis di
+  `lib/data/seed_activities.dart`), dengan chip hari beruntun dan kartu progres (selesai /
+  terlambat / dibatalkan).
+- **Tandai selesai** — cukup satu ketuk; status ditentukan otomatis: *selesai tepat waktu* atau
+  *terlambat* jika ditandai lebih dari 35 menit (`ScheduleProvider.toleranceMinutes`) setelah jam
+  mulai.
+- **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas
+  ("Lainnya"), tercatat ke riwayat dengan tanggal & jam.
+- **Kalender** — grid bulanan dengan titik status per hari (sempurna / ada terlambat / ada
+  pembatalan) plus log pembatalan terakhir per hari.
+- **Statistik** — ring disiplin mingguan, grafik batang per hari, peringkat alasan pembatalan
+  paling sering, dan catatan otomatis (kegiatan yang paling sering dibatalkan).
+- **Pengaturan** — info template (tetap, tidak diedit lewat UI sesuai spesifikasi), info jendela
+  toleransi terlambat, dan preferensi pengingat (toggle lokal, belum terhubung ke notifikasi push
+  sungguhan).
+- **Notifikasi** — feed dibangun dari log aktivitas nyata (bukan data contoh).
 - Data disimpan lokal dengan `sqflite`, tanpa backend.
 
 ## Struktur kode
 
 ```
 lib/
-  data/seed_activities.dart     # template 23 kegiatan tetap (hardcoded) + daftar alasan skip
-  models/                       # Activity, DailyLog
-  db/database_helper.dart       # akses sqflite
-  providers/schedule_provider.dart  # state management (Provider/ChangeNotifier)
-  screens/                      # HomeScreen, HistoryScreen
-  widgets/                      # ActivityTile, dialog alasan skip
-  theme/app_theme.dart          # palet & tema minimalis
+  data/seed_activities.dart      # template 23 kegiatan tetap (hardcoded) + daftar alasan batal
+  models/                        # Activity, DailyLog (status: done/late/cancelled)
+  db/database_helper.dart        # akses sqflite
+  providers/schedule_provider.dart   # state management (Provider/ChangeNotifier), statistik & kalender
+  screens/
+    shell_screen.dart            # app bar + bottom nav 4 tab
+    home_tab.dart                # Hari Ini
+    calendar_tab.dart            # Kalender
+    stats_tab.dart                # Statistik
+    settings_tab.dart            # Pengaturan
+    notification_feed_screen.dart
+  widgets/                       # ActivityTile, dialog alasan batal, ring chart
+  theme/app_theme.dart           # palet & tema persis dari desain
 ```
 
 ## Menjalankan

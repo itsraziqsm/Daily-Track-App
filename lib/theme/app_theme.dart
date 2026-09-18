@@ -1,56 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../data/seed_activities.dart';
-
-/// Palet minimalis terinspirasi kertas agenda: krem, tinta, dan aksen lembut.
+/// Palet diambil persis dari desain "Daily Track" (claude.ai/design handoff).
 class AppColors {
-  static const paper = Color(0xFFFBF7EF);
-  static const ink = Color(0xFF2E2A24);
-  static const inkMuted = Color(0xFF7A7266);
-  static const line = Color(0xFFE0D8C8);
-  static const accent = Color(0xFFB05C3B);
-}
+  static const bg = Color(0xFFF4F2EE);
+  static const card = Color(0xFFFFFFFF);
+  static const ink = Color(0xFF2B251E);
+  static const inkMuted = Color(0xFF6F6555);
+  static const inkMuted2 = Color(0xFF7D7263);
+  static const inkMuted3 = Color(0xFF6B6153);
+  static const line = Color(0xFFF1EBE0);
+  static const lineSoft = Color(0xFFECE5D9);
+  static const lineSoft2 = Color(0xFFF4F0E8);
 
-Color categoryColor(String category) {
-  switch (category) {
-    case Categories.ibadahDiri:
-      return const Color(0xFF6B8E6B);
-    case Categories.istirahatOlahraga:
-      return const Color(0xFF4A7A96);
-    case Categories.kerjaBelajar:
-      return const Color(0xFFB08A3E);
-    case Categories.tidur:
-      return const Color(0xFF7C6A9C);
-    default:
-      return AppColors.inkMuted;
-  }
+  static const yellow = Color(0xFFFFC93C);
+  static const yellowBg = Color(0xFFFFFBF0);
+  static const yellowBorder = Color(0xFFFFEDBF);
+  static const yellowBorder2 = Color(0xFFFFDE8F);
+  static const yellowChipBg = Color(0xFFFFF4D1);
+  static const yellowChipBorder = Color(0xFFFFE08A);
+  static const yellowInk = Color(0xFF5C4408);
+  static const yellowInk2 = Color(0xFF7A5C12);
+  static const yellowInk3 = Color(0xFF6D5A2F);
+
+  static const orange = Color(0xFFF0871F);
+  static const orangeHover = Color(0xFFD2700F);
+  static const orangeChipBg = Color(0xFFFFF1E2);
+  static const orangeChipInk = Color(0xFFA2500C);
+
+  static const cancelledDot = Color(0xFFE4DDD1);
+  static const cancelledDot2 = Color(0xFFDCD4C6);
+  static const rowBg = Color(0xFFFDFCF9);
 }
 
 ThemeData buildAppTheme() {
   final base = ThemeData.light(useMaterial3: true);
   return base.copyWith(
-    scaffoldBackgroundColor: AppColors.paper,
+    scaffoldBackgroundColor: AppColors.bg,
     colorScheme: base.colorScheme.copyWith(
-      primary: AppColors.accent,
-      surface: AppColors.paper,
+      primary: AppColors.orange,
+      secondary: AppColors.yellow,
+      surface: AppColors.card,
+    ),
+    textTheme: GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+      bodyColor: AppColors.ink,
+      displayColor: AppColors.ink,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.paper,
+      backgroundColor: AppColors.card,
       foregroundColor: AppColors.ink,
       elevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
         color: AppColors.ink,
-        fontSize: 22,
-        fontWeight: FontWeight.w700,
-        fontFamily: 'Georgia',
+        fontSize: 13,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.2,
       ),
     ),
-    textTheme: base.textTheme.apply(
-      bodyColor: AppColors.ink,
-      displayColor: AppColors.ink,
-    ),
     dividerColor: AppColors.line,
-    useMaterial3: true,
   );
 }

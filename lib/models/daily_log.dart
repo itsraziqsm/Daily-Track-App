@@ -1,10 +1,26 @@
-enum LogStatus { done, skipped }
+enum LogStatus { done, late, cancelled }
 
 extension LogStatusValue on LogStatus {
-  String get value => this == LogStatus.done ? 'done' : 'skipped';
+  String get value {
+    switch (this) {
+      case LogStatus.done:
+        return 'done';
+      case LogStatus.late:
+        return 'late';
+      case LogStatus.cancelled:
+        return 'cancelled';
+    }
+  }
 
   static LogStatus fromValue(String value) {
-    return value == 'done' ? LogStatus.done : LogStatus.skipped;
+    switch (value) {
+      case 'late':
+        return LogStatus.late;
+      case 'cancelled':
+        return LogStatus.cancelled;
+      default:
+        return LogStatus.done;
+    }
   }
 }
 
@@ -45,24 +61,6 @@ class DailyLog {
       status: LogStatusValue.fromValue(map['status'] as String),
       reason: map['reason'] as String?,
       timestamp: DateTime.parse(map['timestamp'] as String),
-    );
-  }
-
-  DailyLog copyWith({
-    int? id,
-    int? activityId,
-    String? date,
-    LogStatus? status,
-    String? reason,
-    DateTime? timestamp,
-  }) {
-    return DailyLog(
-      id: id ?? this.id,
-      activityId: activityId ?? this.activityId,
-      date: date ?? this.date,
-      status: status ?? this.status,
-      reason: reason ?? this.reason,
-      timestamp: timestamp ?? this.timestamp,
     );
   }
 }

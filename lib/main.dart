@@ -3,7 +3,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/schedule_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/shell_screen.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -23,7 +23,7 @@ class JadwalHarianApp extends StatelessWidget {
         title: 'Jadwal Harian',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
-        home: const HomeScreen(),
+        home: const ShellScreen(),
       ),
     );
   }
