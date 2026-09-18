@@ -26,7 +26,10 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi kon
 - **Pengaturan** — info template (tetap, tidak diedit lewat UI sesuai spesifikasi), info jendela
   toleransi terlambat, dan preferensi pengingat (toggle lokal, belum terhubung ke notifikasi push
   sungguhan).
-- **Notifikasi** — feed dibangun dari log aktivitas nyata (bukan data contoh).
+- **Notifikasi** — feed dibangun dari log aktivitas nyata (bukan data contoh). App bar hanya
+  memuat tombol lonceng ini, tanpa border.
+- **Ikon Lucide** — seluruh ikon memakai `lucide_icons_flutter`, yang membundel `lucide.ttf`
+  sebagai aset paket sehingga tidak ada pengambilan dari CDN saat aplikasi berjalan.
 - Data disimpan lokal dengan `sqflite`, tanpa backend.
 
 ## Struktur kode

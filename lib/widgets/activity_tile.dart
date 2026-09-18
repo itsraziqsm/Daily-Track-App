@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../models/activity.dart';
 import '../models/daily_log.dart';
@@ -64,7 +65,13 @@ class ActivityTile extends StatelessWidget {
 
     final checkBg = (isDone || isLate) ? accent : Colors.white;
     final checkInk = (isDone || isLate) ? Colors.white : const Color(0xFFD8CFBE);
-    final checkMark = isDone ? '✓' : isLate ? '!' : isCancelled ? '✕' : '';
+    final IconData? checkIcon = isDone
+        ? LucideIcons.check
+        : isLate
+            ? LucideIcons.clock
+            : isCancelled
+                ? LucideIcons.x
+                : null;
 
     final metaText = isLate
         ? 'Selesai di luar toleransi ${ScheduleProvider.toleranceMinutes} mnt'
@@ -180,10 +187,9 @@ class ActivityTile extends StatelessWidget {
                               color: checkBg,
                               border: Border.all(color: accent, width: 2),
                             ),
-                            child: Text(
-                              checkMark,
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: checkInk),
-                            ),
+                            child: checkIcon == null
+                                ? null
+                                : Icon(checkIcon, size: 16, color: checkInk),
                           ),
                         ),
                       ],

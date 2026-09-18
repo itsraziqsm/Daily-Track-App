@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/schedule_provider.dart';
@@ -21,10 +22,10 @@ class _ShellScreenState extends State<ShellScreen> {
   int _tab = 0;
 
   static const _tabs = [
-    (icon: Icons.today_rounded, label: 'Hari Ini'),
-    (icon: Icons.calendar_month_rounded, label: 'Kalender'),
-    (icon: Icons.bar_chart_rounded, label: 'Statistik'),
-    (icon: Icons.settings_rounded, label: 'Pengaturan'),
+    (icon: LucideIcons.listTodo, label: 'Hari Ini'),
+    (icon: LucideIcons.calendarDays, label: 'Kalender'),
+    (icon: LucideIcons.chartColumn, label: 'Statistik'),
+    (icon: LucideIcons.settings, label: 'Pengaturan'),
   ];
 
   @override
@@ -41,7 +42,6 @@ class _ShellScreenState extends State<ShellScreen> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         toolbarHeight: 48,
-        title: const Text('Daily Track'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 18),
@@ -49,20 +49,17 @@ class _ShellScreenState extends State<ShellScreen> {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const NotificationFeedScreen()),
               ),
-              child: Container(
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(13),
-                  border: Border.all(color: AppColors.line, width: 1.5),
-                ),
                 child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    const Center(child: Icon(Icons.notifications_none_rounded, size: 21, color: AppColors.ink)),
+                    const Icon(LucideIcons.bell, size: 21, color: AppColors.ink),
                     Positioned(
-                      top: 6,
-                      right: 6,
+                      top: 7,
+                      right: 7,
                       child: Container(
                         width: 8,
                         height: 8,

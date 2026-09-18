@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/schedule_provider.dart';
@@ -37,7 +38,7 @@ class SettingsTab extends StatelessWidget {
                 width: 20,
                 height: 20,
                 decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.orange),
-                child: const Icon(Icons.check, size: 13, color: Colors.white),
+                child: const Icon(LucideIcons.check, size: 12, color: Colors.white),
               ),
               const SizedBox(width: 13),
               Expanded(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../models/daily_log.dart';
@@ -21,7 +22,7 @@ class NotificationFeedScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Notifikasi', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.ink)),
         actions: [
-          IconButton(icon: const Icon(Icons.close, color: AppColors.ink), onPressed: () => Navigator.of(context).pop()),
+          IconButton(icon: const Icon(LucideIcons.x, size: 21, color: AppColors.ink), onPressed: () => Navigator.of(context).pop()),
         ],
       ),
       body: items.isEmpty

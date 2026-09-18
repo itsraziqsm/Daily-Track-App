@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../models/daily_log.dart';
@@ -62,11 +63,11 @@ class _CalendarTabState extends State<CalendarTab> {
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left, color: AppColors.orange),
+                  icon: const Icon(LucideIcons.chevronLeft, size: 20, color: AppColors.orange),
                   onPressed: () => _shiftMonth(-1),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right, color: AppColors.orange),
+                  icon: const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.orange),
                   onPressed: () => _shiftMonth(1),
                 ),
               ],
