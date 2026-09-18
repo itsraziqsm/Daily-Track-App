@@ -6,17 +6,17 @@ import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_time.dart';
 import '../widgets/timezone_sheet.dart';
+import 'manage_templates_screen.dart';
 
-/// Tab "Pengaturan" — info template (tetap, tidak diedit lewat UI), jendela
-/// toleransi terlambat, dan preferensi pengingat.
+/// Tab "Pengaturan" — template yang aktif hari ini, pintu masuk ke Kelola
+/// Template, aturan pelacakan, dan preferensi pengingat.
 class SettingsTab extends StatelessWidget {
   const SettingsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ScheduleProvider>();
-    final first = provider.activities.first;
-    final last = provider.activities.last;
+    final active = provider.activeTemplate;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
@@ -47,10 +47,15 @@ class SettingsTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Template Harian', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.yellowInk)),
+                    Text(
+                      active?.name ?? 'Belum ada template',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.yellowInk),
+                    ),
                     const SizedBox(height: 3),
                     Text(
-                      '${provider.totalCount} kegiatan · ${first.startTime}–${last.endTime}',
+                      active == null
+                          ? 'Buat satu lewat Kelola Template'
+                          : 'Aktif hari ini · ${active.activities.length} kegiatan · ${active.rangeLabel}',
                       style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.yellowInk2),
                     ),
                   ],
@@ -59,11 +64,38 @@ class SettingsTab extends StatelessWidget {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            'Template ini tetap dan tidak dapat diubah lewat aplikasi.',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted2.withValues(alpha: 0.9)),
+        const SizedBox(height: 9),
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ManageTemplatesScreen()),
+          ),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: AppColors.line, width: 1.5),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Kelola Template', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${provider.templates.length} template · atur kegiatan dan hari pemakaiannya',
+                        style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Icon(LucideIcons.chevronRight, size: 18, color: AppColors.inkMuted2),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 26),
@@ -89,26 +121,40 @@ class SettingsTab extends StatelessWidget {
         const SizedBox(height: 11),
         _ToggleRow(
           label: 'Notifikasi tiap kegiatan',
-          sub: 'Muncul 10 menit sebelum jam mulai',
+          sub: 'Muncul ${ScheduleProvider.reminderMinutesBefore} menit sebelum jam mulai',
           value: provider.notificationPrefs['each'] ?? false,
-          onTap: () => provider.toggleNotification('each'),
+          onTap: () => _toggle(context, 'each'),
         ),
         const SizedBox(height: 10),
         _ToggleRow(
           label: 'Ringkasan pagi',
           sub: 'Setiap hari 06:00 · daftar kegiatan',
           value: provider.notificationPrefs['morning'] ?? false,
-          onTap: () => provider.toggleNotification('morning'),
+          onTap: () => _toggle(context, 'morning'),
         ),
         const SizedBox(height: 10),
         _ToggleRow(
           label: 'Ringkasan malam',
           sub: 'Setiap hari 21:30 · rekap & pembatalan',
           value: provider.notificationPrefs['night'] ?? false,
-          onTap: () => provider.toggleNotification('night'),
+          onTap: () => _toggle(context, 'night'),
         ),
       ],
     );
+  }
+
+  /// Menyalakan pengingat sekaligus meminta izin sistem. Kalau izinnya ditolak,
+  /// toggle tidak menyala dan pengguna diberi tahu.
+  Future<void> _toggle(BuildContext context, String key) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await context.read<ScheduleProvider>().toggleNotification(key);
+    if (!ok) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Izin notifikasi belum diberikan. Aktifkan lewat pengaturan sistem.'),
+        ),
+      );
+    }
   }
 }
 

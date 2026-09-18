@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 
 import 'providers/schedule_provider.dart';
 import 'screens/shell_screen.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
+  await NotificationService.instance.init();
   runApp(const JadwalHarianApp());
 }
 

@@ -9,6 +9,7 @@ Future<AppTimeZone?> showTimeZoneSheet(BuildContext context, AppTimeZone current
   return showModalBottomSheet<AppTimeZone>(
     context: context,
     backgroundColor: Colors.transparent,
+    isScrollControlled: true,
     builder: (context) => _TimeZoneSheet(current: current),
   );
 }
@@ -24,37 +25,44 @@ class _TimeZoneSheet extends StatelessWidget {
         color: AppColors.card,
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 26),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 38,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: AppColors.lineSoft,
-                borderRadius: BorderRadius.circular(99),
+      // SafeArea menampung bilah navigasi sistem, dan isinya digulung bila
+      // layarnya pendek — tanpa ini baris terakhir bisa meluber.
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.lineSoft,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
               ),
-            ),
+              const Text(
+                'Zona waktu',
+                style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Menentukan jam berjalan, batas hari, dan hitungan terlambat',
+                style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+              ),
+              const SizedBox(height: 16),
+              for (final zone in AppTimeZone.values) ...[
+                _ZoneRow(zone: zone, selected: zone == current),
+                if (zone != AppTimeZone.values.last) const SizedBox(height: 9),
+              ],
+            ],
           ),
-          const Text(
-            'Zona waktu',
-            style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Menentukan jam berjalan, batas hari, dan hitungan terlambat',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
-          ),
-          const SizedBox(height: 16),
-          for (final zone in AppTimeZone.values) ...[
-            _ZoneRow(zone: zone, selected: zone == current),
-            if (zone != AppTimeZone.values.last) const SizedBox(height: 9),
-          ],
-        ],
+        ),
       ),
     );
   }

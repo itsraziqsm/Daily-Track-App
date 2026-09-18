@@ -1,14 +1,14 @@
 # Jadwal Harian (Daily Track)
 
 Aplikasi Flutter personal untuk melacak kedisiplinan menjalankan jadwal harian (format 24 jam).
-Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi kontennya (template
-23 kegiatan & daftar alasan pembatalan) sesuai spesifikasi tertulis.
+Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi template bawaan
+(23 kegiatan) dan daftar alasan pembatalan sesuai spesifikasi tertulis.
 
 ## Fitur
 
-- **Hari Ini** — timeline vertikal dari satu template kegiatan tetap (di-*seed* statis di
-  `lib/data/seed_activities.dart`), dengan chip hari beruntun dan kartu progres (selesai /
-  terlambat / dibatalkan). Header dan kartu progres diam; hanya daftar kegiatan yang bergulir.
+- **Hari Ini** — timeline vertikal dari template yang berlaku untuk hari itu, dengan chip hari
+  beruntun dan kartu progres (selesai / terlambat / dibatalkan). Header dan kartu progres diam;
+  hanya daftar kegiatan yang bergulir.
 - **Navigasi** — empat tab ikon di bawah, bisa diketuk atau digeser kanan-kiri.
 - **Tampilan default polos** — kartu kegiatan tampil apa adanya. Tombol **Batalkan** dan **Tandai
   selesai** hanya muncul pada kegiatan yang jamnya sedang berjalan (di dalam rentang
@@ -22,16 +22,21 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi kon
   Ketiganya offset tetap dan Indonesia tanpa DST, jadi tidak perlu basis data zona waktu IANA.
 - **Catatan terkunci** — kegiatan yang sudah ditandai dan sudah lewat 35 menit setelah rentangnya
   usai tidak bisa diubah lagi.
+- **Data lokal** — sqflite dengan skema v3: `daily_logs`, `app_settings`, `templates`,
+  `template_activities`, `day_assignments`. Migrasi dari skema lama menjaga log yang sudah ada.
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas
   ("Lainnya"), tercatat ke riwayat dengan tanggal & jam.
 - **Kalender** — grid bulanan dengan titik status per hari (sempurna / ada terlambat / ada
   pembatalan) plus log pembatalan terakhir per hari.
 - **Statistik** — ring disiplin mingguan, grafik batang per hari, peringkat alasan pembatalan
   paling sering, dan catatan otomatis (kegiatan yang paling sering dibatalkan).
-- **Pengaturan** — info template (tetap, tidak diedit lewat UI sesuai spesifikasi), info jendela
-  toleransi terlambat, dan preferensi pengingat (toggle lokal, belum terhubung ke notifikasi push
-  sungguhan).
-- **Notifikasi** — feed dibangun dari log aktivitas nyata (bukan data contoh). App bar hanya
+- **Template & Kelola Template** — Pengaturan menampilkan template yang aktif hari ini, dan kartu
+  **Kelola Template** membuka layar untuk menyunting template, membuat yang baru, menghapus, serta
+  menentukan template mana yang dipakai pada hari apa (Senin–Minggu).
+- **Notifikasi sungguhan** — pengingat tiap kegiatan (10 menit sebelum mulai), ringkasan pagi
+  06:00, dan ringkasan malam 21:30, lewat `flutter_local_notifications`. Izin sistem diminta saat
+  toggle dinyalakan. Lihat `ANDROID_SETUP.md` untuk penyesuaian manifest yang perlu ditambahkan.
+- **Feed notifikasi** — dibangun dari log aktivitas nyata (bukan data contoh). App bar hanya
   memuat tombol lonceng ini, tanpa border.
 - **Ikon Lucide** — seluruh ikon memakai `lucide_icons_flutter`, yang membundel `lucide.ttf`
   sebagai aset paket sehingga tidak ada pengambilan dari CDN saat aplikasi berjalan.
@@ -45,12 +50,14 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi kon
 
 ```
 lib/
-  data/seed_activities.dart      # template 23 kegiatan tetap (hardcoded) + daftar alasan batal
-  models/                        # Activity, DailyLog (status: done/late/cancelled)
+  data/seed_activities.dart      # isi template bawaan (23 kegiatan) + daftar alasan batal
+  models/                        # Activity, Template, DailyLog (status: done/late/cancelled)
   db/database_helper.dart        # akses sqflite
   providers/schedule_provider.dart   # state management (Provider/ChangeNotifier), statistik & kalender
   screens/
-    shell_screen.dart            # app bar + bottom nav 4 tab
+    shell_screen.dart            # app bar + bottom nav 4 tab (swipe antar halaman)
+    manage_templates_screen.dart # daftar template + penugasan per hari
+    template_editor_screen.dart  # sunting/buat template
     home_tab.dart                # Hari Ini
     calendar_tab.dart            # Kalender
     stats_tab.dart                # Statistik
@@ -58,6 +65,7 @@ lib/
     notification_feed_screen.dart
   widgets/                       # ActivityTile, dialog alasan batal, ring chart
   theme/app_theme.dart           # palet & tema persis dari desain
+  services/notification_service.dart  # notifikasi lokal terjadwal
   utils/app_time.dart            # zona waktu aktif (WIB/WITA/WIT) & helper waktu
 ```
 

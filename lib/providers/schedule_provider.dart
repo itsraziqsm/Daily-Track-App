@@ -2,20 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../data/seed_activities.dart';
 import '../db/database_helper.dart';
 import '../models/activity.dart';
 import '../models/daily_log.dart';
+import '../models/template.dart';
+import '../services/notification_service.dart';
 import '../utils/app_time.dart';
 
 class ScheduleProvider extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper.instance;
-
-  final List<Activity> activities = seedActivities;
+  final NotificationService _notifications = NotificationService.instance;
 
   /// Kegiatan yang dicentang lebih dari sekian menit setelah rentang waktunya
   /// usai dihitung terlambat.
   static const int toleranceMinutes = 35;
+
+  /// Pengingat kegiatan muncul sekian menit sebelum jam mulai.
+  static const int reminderMinutesBefore = 10;
+
+  static const _timeZoneKey = 'timeZone';
+  static const _notifPrefix = 'notif.';
 
   /// Jendela kegiatan aktif bergeser mengikuti jam, jadi tampilan perlu
   /// menyegarkan diri tanpa interaksi pengguna.
@@ -31,16 +37,45 @@ class ScheduleProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  List<Template> _templates = [];
+  Map<int, int> _dayAssignments = {};
   Map<int, DailyLog> _todayLogs = {};
   List<DailyLog> _allLogs = [];
+  Map<int, Activity> _activityIndex = {};
 
   final Map<String, bool> notificationPrefs = {
-    'each': true,
-    'morning': true,
+    'each': false,
+    'morning': false,
     'night': false,
   };
+  bool notificationsAllowed = false;
+
+  List<Template> get templates => _templates;
+  Map<int, int> get dayAssignments => _dayAssignments;
 
   String get todayKey => AppTime.dateKey(AppTime.now());
+  AppTimeZone get timeZone => AppTime.zone;
+
+  /// Template yang berlaku untuk hari ini menurut penugasan hari.
+  Template? get activeTemplate => templateForWeekday(AppTime.now().weekday);
+
+  Template? templateForWeekday(int weekday) {
+    if (_templates.isEmpty) return null;
+    final id = _dayAssignments[weekday];
+    for (final t in _templates) {
+      if (t.id == id) return t;
+    }
+    return _templates.first;
+  }
+
+  /// Hari-hari yang memakai template tertentu.
+  List<int> weekdaysUsing(int templateId) {
+    final days = _dayAssignments.entries.where((e) => e.value == templateId).map((e) => e.key).toList();
+    days.sort();
+    return days;
+  }
+
+  List<Activity> get activities => activeTemplate?.activities ?? const [];
 
   Map<int, DailyLog> get todayLogs => _todayLogs;
   List<DailyLog> get allLogs => _allLogs;
@@ -53,11 +88,28 @@ class ScheduleProvider extends ChangeNotifier {
       _todayLogs.values.where((l) => l.status == LogStatus.late).length;
   int get onTimeCount =>
       _todayLogs.values.where((l) => l.status == LogStatus.done).length;
-  int get cancelledTodayCount =>
-      _todayLogs.values.where((l) => l.status == LogStatus.cancelled).length;
   int get totalCount => activities.length;
 
-  AppTimeZone get timeZone => AppTime.zone;
+  Future<void> load() async {
+    AppTime.zone = AppTimeZoneInfo.fromName(await _db.getSetting(_timeZoneKey));
+    for (final key in notificationPrefs.keys.toList()) {
+      notificationPrefs[key] = (await _db.getSetting('$_notifPrefix$key')) == 'true';
+    }
+    _templates = await _db.allTemplates();
+    _dayAssignments = await _db.dayAssignments();
+    _activityIndex = {
+      for (final t in _templates)
+        for (final a in t.activities) a.id: a,
+    };
+    final logs = await _db.logsForDate(todayKey);
+    _todayLogs = {for (final l in logs) l.activityId: l};
+    _allLogs = await _db.allLogs();
+    notificationsAllowed = await _notifications.hasPermission();
+    notifyListeners();
+    await _syncNotifications();
+  }
+
+  // ---- Zona waktu ----
 
   /// Mengganti zona waktu: tersimpan, lalu log hari ini dimuat ulang karena
   /// batas "hari ini" bisa ikut bergeser.
@@ -68,15 +120,62 @@ class ScheduleProvider extends ChangeNotifier {
     await load();
   }
 
-  static const _timeZoneKey = 'timeZone';
+  // ---- Template ----
 
-  Future<void> load() async {
-    AppTime.zone = AppTimeZoneInfo.fromName(await _db.getSetting(_timeZoneKey));
-    final logs = await _db.logsForDate(todayKey);
-    _todayLogs = {for (final l in logs) l.activityId: l};
-    _allLogs = await _db.allLogs();
-    notifyListeners();
+  Future<void> saveTemplate({int? id, required String name, required List<Activity> activities}) async {
+    final sorted = [...activities]..sort((a, b) => a.startMinutes.compareTo(b.startMinutes));
+    if (id == null) {
+      await _db.createTemplate(name, sorted);
+    } else {
+      await _db.updateTemplate(id, name, sorted);
+    }
+    await load();
   }
+
+  Future<void> deleteTemplate(int templateId) async {
+    if (_templates.length <= 1) return;
+    final fallback = _templates.firstWhere((t) => t.id != templateId);
+    await _db.deleteTemplate(templateId, fallback.id);
+    await load();
+  }
+
+  Future<void> assignDay(int weekday, int templateId) async {
+    await _db.assignDay(weekday, templateId);
+    await load();
+  }
+
+  // ---- Notifikasi ----
+
+  /// Menyalakan/mematikan satu jenis pengingat. Saat dinyalakan, izin sistem
+  /// diminta lebih dulu; kalau ditolak, toggle tidak jadi menyala.
+  Future<bool> toggleNotification(String key) async {
+    final turningOn = !(notificationPrefs[key] ?? false);
+    if (turningOn) {
+      final granted = await _notifications.requestPermission();
+      notificationsAllowed = granted;
+      if (!granted) {
+        notifyListeners();
+        return false;
+      }
+    }
+    notificationPrefs[key] = turningOn;
+    await _db.setSetting('$_notifPrefix$key', turningOn.toString());
+    notifyListeners();
+    await _syncNotifications();
+    return true;
+  }
+
+  Future<void> _syncNotifications() async {
+    await _notifications.reschedule(
+      activities: activities,
+      eachActivity: notificationPrefs['each'] ?? false,
+      morningSummary: notificationPrefs['morning'] ?? false,
+      nightSummary: notificationPrefs['night'] ?? false,
+      minutesBefore: reminderMinutesBefore,
+    );
+  }
+
+  // ---- Status kegiatan ----
 
   /// Kegiatan sedang berlangsung: jam sekarang (menurut zona aktif) berada di
   /// dalam rentang mulai–selesai. Hanya kegiatan inilah yang menampilkan aksi.
@@ -95,8 +194,8 @@ class ScheduleProvider extends ChangeNotifier {
 
   /// Rentang kegiatan sudah usai lebih dari jendela toleransi. Kegiatan yang
   /// masih berlangsung tidak pernah termasuk — ini sekaligus menjaga kegiatan
-  /// lintas tengah malam (mis. Tidur 22.00–04.30), yang jam usainya secara
-  /// angka berada di belakang jam sekarang.
+  /// lintas tengah malam, yang jam usainya secara angka berada di belakang jam
+  /// sekarang.
   bool isPastGrace(Activity activity) =>
       !isRunning(activity) && minutesSinceEnd(activity) > toleranceMinutes;
 
@@ -116,11 +215,10 @@ class ScheduleProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final late = isPastGrace(activity);
     final log = DailyLog(
       activityId: activity.id,
       date: todayKey,
-      status: late ? LogStatus.late : LogStatus.done,
+      status: isPastGrace(activity) ? LogStatus.late : LogStatus.done,
       timestamp: AppTime.now(),
     );
     await _db.upsertLog(log);
@@ -143,17 +241,9 @@ class ScheduleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Activity? activityById(int id) {
-    for (final a in activities) {
-      if (a.id == id) return a;
-    }
-    return null;
-  }
-
-  void toggleNotification(String key) {
-    notificationPrefs[key] = !(notificationPrefs[key] ?? false);
-    notifyListeners();
-  }
+  /// Mencari kegiatan lintas template — log lama tetap bisa ditampilkan
+  /// meskipun templatenya sudah diganti.
+  Activity? activityById(int id) => _activityIndex[id];
 
   // ---- Statistik & kalender ----
 
@@ -166,13 +256,12 @@ class ScheduleProvider extends ChangeNotifier {
   }
 
   /// Hari "sempurna": semua kegiatan tercatat pada hari itu selesai tepat waktu (tanpa terlambat/batal).
-  bool _isPerfectDay(List<DailyLog> logs) {
-    if (logs.isEmpty) return false;
-    return logs.every((l) => l.status == LogStatus.done) && logs.length >= totalCount;
+  bool _isPerfectDay(List<DailyLog> logs, int expected) {
+    if (logs.isEmpty || expected == 0) return false;
+    return logs.every((l) => l.status == LogStatus.done) && logs.length >= expected;
   }
 
-  bool dayHasLate(List<DailyLog> logs) => logs.any((l) => l.status == LogStatus.late);
-  bool dayHasCancelled(List<DailyLog> logs) => logs.any((l) => l.status == LogStatus.cancelled);
+  int _expectedCountFor(DateTime day) => templateForWeekday(day.weekday)?.activities.length ?? 0;
 
   /// Jumlah hari sempurna berturut-turut, dihitung mundur dari kemarin.
   int get perfectStreak {
@@ -180,9 +269,8 @@ class ScheduleProvider extends ChangeNotifier {
     var streak = 0;
     var day = AppTime.now().subtract(const Duration(days: 1));
     while (true) {
-      final key = AppTime.dateKey(day);
-      final logs = byDate[key];
-      if (logs == null || !_isPerfectDay(logs)) break;
+      final logs = byDate[AppTime.dateKey(day)];
+      if (logs == null || !_isPerfectDay(logs, _expectedCountFor(day))) break;
       streak++;
       day = day.subtract(const Duration(days: 1));
     }
@@ -196,9 +284,9 @@ class ScheduleProvider extends ChangeNotifier {
     for (var i = 6; i >= 0; i--) {
       final day = AppTime.now().subtract(Duration(days: i));
       final logs = byDate[AppTime.dateKey(day)] ?? [];
+      final expected = _expectedCountFor(day);
       final completed = logs.where((l) => l.status != LogStatus.cancelled).length;
-      final pct = totalCount == 0 ? 0.0 : completed / totalCount;
-      out.add(MapEntry(day, pct));
+      out.add(MapEntry(day, expected == 0 ? 0.0 : completed / expected));
     }
     return out;
   }
@@ -206,8 +294,7 @@ class ScheduleProvider extends ChangeNotifier {
   double get weekDisciplinePct {
     final days = last7DaysCompletion;
     if (days.isEmpty) return 0;
-    final sum = days.fold<double>(0, (a, b) => a + b.value);
-    return sum / days.length;
+    return days.fold<double>(0, (a, b) => a + b.value) / days.length;
   }
 
   String? get mostCancelledActivityTitle {
@@ -227,8 +314,7 @@ class ScheduleProvider extends ChangeNotifier {
       final r = l.reason ?? 'Lainnya';
       counts[r] = (counts[r] ?? 0) + 1;
     }
-    final entries = counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    return entries;
+    return counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
   }
 
   String? get mostCommonReason => reasonRanking.isEmpty ? null : reasonRanking.first.key;

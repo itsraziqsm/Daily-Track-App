@@ -20,6 +20,9 @@ dependencies:
   # Font ikon Lucide ikut dibundel sebagai aset paket (assets/lucide.ttf),
   # tidak diambil dari CDN saat aplikasi berjalan.
   lucide_icons_flutter: ^3.1.20
+  # Notifikasi lokal terjadwal + zona waktu untuk penjadwalannya.
+  flutter_local_notifications: ^19.0.0
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:

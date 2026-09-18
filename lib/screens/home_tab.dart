@@ -19,7 +19,7 @@ class HomeTab extends StatelessWidget {
     final activities = provider.activities;
     final pctDone = provider.totalCount == 0 ? 0.0 : provider.onTimeCount / provider.totalCount;
     final pctLate = provider.totalCount == 0 ? 0.0 : provider.lateCount / provider.totalCount;
-    final allSet = activities.every((a) => provider.todayLogs.containsKey(a.id));
+    final allSet = activities.isNotEmpty && activities.every((a) => provider.todayLogs.containsKey(a.id));
 
     return Column(
       children: [
@@ -138,6 +138,17 @@ class HomeTab extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(22, 4, 22, 26),
             children: [
+              if (activities.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 40),
+                  child: Text(
+                    provider.templates.isEmpty
+                        ? 'Belum ada template. Buat satu di Pengaturan → Kelola Template.'
+                        : 'Template hari ini belum berisi kegiatan.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+                  ),
+                ),
               for (var i = 0; i < activities.length; i++)
                 ActivityTile(
                   activity: activities[i],
