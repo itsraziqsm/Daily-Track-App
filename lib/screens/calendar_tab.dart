@@ -246,12 +246,19 @@ class _HistoryDay extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                      decoration: BoxDecoration(color: AppColors.orangeChipBg, borderRadius: BorderRadius.circular(9)),
-                      child: Text(
-                        l.reason ?? '-',
-                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.orangeChipInk),
+                    // Nama kegiatan yang diutamakan; alasan panjang dipangkas
+                    // agar barisnya tidak meluber.
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 108),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                        decoration: BoxDecoration(color: AppColors.orangeChipBg, borderRadius: BorderRadius.circular(9)),
+                        child: Text(
+                          l.reason ?? '-',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.orangeChipInk),
+                        ),
                       ),
                     ),
                   ],
