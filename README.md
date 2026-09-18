@@ -30,6 +30,10 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi kon
   memuat tombol lonceng ini, tanpa border.
 - **Ikon Lucide** — seluruh ikon memakai `lucide_icons_flutter`, yang membundel `lucide.ttf`
   sebagai aset paket sehingga tidak ada pengambilan dari CDN saat aplikasi berjalan.
+- **Tipografi tanpa CDN** — tiga famili huruf dibundel lokal di `assets/fonts/`: **Bricolage
+  Grotesque** untuk judul, **Schibsted Grotesk** untuk label & keterangan, dan **Onest** untuk
+  sisanya (lihat `AppFonts` di `lib/theme/app_theme.dart`). Paket `google_fonts` sudah dilepas
+  karena mengunduh font saat runtime.
 - Data disimpan lokal dengan `sqflite`, tanpa backend.
 
 ## Struktur kode

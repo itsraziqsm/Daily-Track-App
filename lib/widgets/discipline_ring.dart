@@ -27,12 +27,12 @@ class DisciplineRing extends StatelessWidget {
             children: [
               Text(
                 '${(pct * 100).round()}%',
-                style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1.4, color: AppColors.ink, height: 1),
+                style: const TextStyle(fontFamily: AppFonts.title, fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1.4, color: AppColors.ink, height: 1),
               ),
               const SizedBox(height: 2),
               const Text(
                 'DISIPLIN',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: AppColors.yellowInk2),
+                style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: AppColors.yellowInk2),
               ),
             ],
           ),

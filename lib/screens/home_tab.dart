@@ -34,6 +34,7 @@ class HomeTab extends StatelessWidget {
                   Text(
                     todayLabel[0].toUpperCase() + todayLabel.substring(1),
                     style: const TextStyle(
+                      fontFamily: AppFonts.subtitle,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.4,
@@ -43,7 +44,7 @@ class HomeTab extends StatelessWidget {
                   const SizedBox(height: 5),
                   const Text(
                     'Hari Ini',
-                    style: TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
+                    style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
                   ),
                 ],
               ),
@@ -96,7 +97,7 @@ class HomeTab extends StatelessWidget {
                 children: [
                   const Text(
                     'PROGRES HARI INI',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: AppColors.yellowInk3),
+                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: AppColors.yellowInk3),
                   ),
                   Text(
                     '${provider.doneCount}/${provider.totalCount} selesai',

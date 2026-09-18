@@ -19,11 +19,11 @@ class SettingsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
       children: [
-        const Text('PREFERENSI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted)),
+        const Text('PREFERENSI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted)),
         const SizedBox(height: 5),
-        const Text('Pengaturan', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink)),
+        const Text('Pengaturan', style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink)),
         const SizedBox(height: 22),
-        const Text('TEMPLATE KEGIATAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+        const Text('TEMPLATE KEGIATAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
         const SizedBox(height: 11),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -49,7 +49,7 @@ class SettingsTab extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       '${provider.totalCount} kegiatan · ${first.startTime}–${last.endTime}',
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.yellowInk2),
+                      style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.yellowInk2),
                     ),
                   ],
                 ),
@@ -65,7 +65,7 @@ class SettingsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 26),
-        const Text('ATURAN PELACAKAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+        const Text('ATURAN PELACAKAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
         const SizedBox(height: 11),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
@@ -82,7 +82,7 @@ class SettingsTab extends StatelessWidget {
                   children: [
                     Text('Jendela toleransi terlambat', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
                     SizedBox(height: 3),
-                    Text('Dicentang lebih dari ini setelah rentang usai dihitung terlambat', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                    Text('Dicentang lebih dari ini setelah rentang usai dihitung terlambat', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
                   ],
                 ),
               ),
@@ -122,7 +122,7 @@ class SettingsTab extends StatelessWidget {
                   children: [
                     Text('Zona waktu', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
                     SizedBox(height: 3),
-                    Text('Semua jadwal mengikuti Waktu Indonesia Barat', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                    Text('Semua jadwal mengikuti Waktu Indonesia Barat', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
                   ],
                 ),
               ),
@@ -139,7 +139,7 @@ class SettingsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 26),
-        const Text('PENGINGAT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+        const Text('PENGINGAT', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
         const SizedBox(height: 11),
         _ToggleRow(
           label: 'Notifikasi tiap kegiatan',
@@ -193,7 +193,7 @@ class _ToggleRow extends StatelessWidget {
                 children: [
                   Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
                   const SizedBox(height: 3),
-                  Text(sub, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                  Text(sub, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
                 ],
               ),
             ),

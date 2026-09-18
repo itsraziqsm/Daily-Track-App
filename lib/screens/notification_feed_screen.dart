@@ -20,7 +20,7 @@ class NotificationFeedScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.card,
       appBar: AppBar(
-        title: const Text('Notifikasi', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.ink)),
+        title: const Text('Notifikasi', style: TextStyle(fontFamily: AppFonts.title, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.ink)),
         actions: [
           IconButton(icon: const Icon(LucideIcons.x, size: 21, color: AppColors.ink), onPressed: () => Navigator.of(context).pop()),
         ],
@@ -92,7 +92,7 @@ class _NotifCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(body, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted3, height: 1.45)),
+                Text(body, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted3, height: 1.45)),
               ],
             ),
           ),

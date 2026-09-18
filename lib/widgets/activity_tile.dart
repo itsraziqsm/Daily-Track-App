@@ -167,6 +167,7 @@ class ActivityTile extends StatelessWidget {
                               Text(
                                 metaText,
                                 style: TextStyle(
+                                  fontFamily: AppFonts.subtitle,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: isLate ? AppColors.orange : AppColors.inkMuted,

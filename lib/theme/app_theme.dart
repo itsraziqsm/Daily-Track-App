@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+/// Tiga famili huruf, semuanya dibundel lokal di `assets/fonts/`.
+class AppFonts {
+  /// Judul layar dan angka display.
+  static const title = 'BricolageGrotesque';
+
+  /// Label bagian, eyebrow, dan baris keterangan di bawah judul.
+  static const subtitle = 'SchibstedGrotesk';
+
+  /// Sisanya — huruf dasar seluruh aplikasi.
+  static const body = 'Onest';
+}
 
 /// Palet diambil persis dari desain "Daily Track" (claude.ai/design handoff).
 class AppColors {
@@ -35,14 +46,17 @@ class AppColors {
 
 ThemeData buildAppTheme() {
   final base = ThemeData.light(useMaterial3: true);
-  return base.copyWith(
+  return ThemeData(
+    useMaterial3: true,
+    fontFamily: AppFonts.body,
     scaffoldBackgroundColor: AppColors.bg,
     colorScheme: base.colorScheme.copyWith(
       primary: AppColors.orange,
       secondary: AppColors.yellow,
       surface: AppColors.card,
     ),
-    textTheme: GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+    textTheme: base.textTheme.apply(
+      fontFamily: AppFonts.body,
       bodyColor: AppColors.ink,
       displayColor: AppColors.ink,
     ),
@@ -51,12 +65,6 @@ ThemeData buildAppTheme() {
       foregroundColor: AppColors.ink,
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(
-        color: AppColors.ink,
-        fontSize: 13,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.2,
-      ),
     ),
     dividerColor: AppColors.line,
   );

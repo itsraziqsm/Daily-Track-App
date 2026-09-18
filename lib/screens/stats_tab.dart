@@ -28,12 +28,12 @@ class StatsTab extends StatelessWidget {
       children: [
         Text(
           rangeLabel,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted),
+          style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted),
         ),
         const SizedBox(height: 5),
         const Text(
           'Statistik',
-          style: TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
+          style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
         ),
         const SizedBox(height: 18),
         Container(
@@ -53,7 +53,7 @@ class StatsTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('HARI SEMPURNA', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.yellowInk3)),
+                    const Text('HARI SEMPURNA', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.yellowInk3)),
                     const SizedBox(height: 3),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -65,7 +65,7 @@ class StatsTab extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Text('MINGGU INI', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.yellowInk3)),
+                    const Text('MINGGU INI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.yellowInk3)),
                     const SizedBox(height: 3),
                     Text(
                       '${(weekPct * 100).round()}% rata-rata selesai',
@@ -81,8 +81,8 @@ class StatsTab extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: const [
-            Text('PER HARI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
-            Text('% kegiatan selesai', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted2)),
+            Text('PER HARI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+            Text('% kegiatan selesai', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted2)),
           ],
         ),
         const SizedBox(height: 14),
@@ -102,7 +102,7 @@ class StatsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 26),
-        const Text('ALASAN PALING SERING', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+        const Text('ALASAN PALING SERING', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
         const SizedBox(height: 12),
         if (ranking.isEmpty)
           const Padding(
@@ -123,7 +123,7 @@ class StatsTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('CATATAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.7, color: AppColors.yellowInk2)),
+                const Text('CATATAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.7, color: AppColors.yellowInk2)),
                 const SizedBox(height: 6),
                 Text(
                   '"${provider.mostCancelledActivityTitle}" paling sering dibatalkan, biasanya dengan alasan "${provider.mostCommonReason}". Coba lihat kembali jadwalnya.',

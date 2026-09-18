@@ -70,12 +70,12 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
             ),
             const Text(
               'Kenapa dibatalkan?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
+              style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
             ),
             const SizedBox(height: 4),
             Text(
               '${widget.activityLabel} · dicatat ke riwayat',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+              style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
             ),
             const SizedBox(height: 16),
             Wrap(

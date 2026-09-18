@@ -49,7 +49,7 @@ class _CalendarTabState extends State<CalendarTab> {
       children: [
         const Text(
           'RIWAYAT',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted),
+          style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted),
         ),
         const SizedBox(height: 5),
         Row(
@@ -58,7 +58,7 @@ class _CalendarTabState extends State<CalendarTab> {
           children: [
             Text(
               monthLabel[0].toUpperCase() + monthLabel.substring(1),
-              style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
+              style: const TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
             ),
             Row(
               children: [
@@ -106,7 +106,7 @@ class _CalendarTabState extends State<CalendarTab> {
         const SizedBox(height: 26),
         const Text(
           'LOG PEMBATALAN TERAKHIR',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted),
+          style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted),
         ),
         const SizedBox(height: 14),
         if (recentDays.isEmpty)
@@ -212,7 +212,7 @@ class _HistoryDay extends StatelessWidget {
               children: [
                 Text(dateLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
                 const SizedBox(width: 8),
-                Text(dowLabel, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                Text(dowLabel, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
                 const Spacer(),
                 Text('${sorted.length} dibatalkan', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted2)),
               ],
