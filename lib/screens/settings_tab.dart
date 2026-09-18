@@ -81,7 +81,7 @@ class SettingsTab extends StatelessWidget {
                   children: [
                     Text('Jendela toleransi terlambat', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
                     SizedBox(height: 3),
-                    Text('Dicentang setelah ini dihitung terlambat', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                    Text('Dicentang lebih dari ini setelah rentang usai dihitung terlambat', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
                   ],
                 ),
               ),
@@ -101,6 +101,38 @@ class SettingsTab extends StatelessWidget {
                     const Text('mnt', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.yellowInk2)),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 9),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.line, width: 1.5),
+            borderRadius: BorderRadius.circular(18),
+            color: Colors.white,
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Zona waktu', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
+                    SizedBox(height: 3),
+                    Text('Semua jadwal mengikuti Waktu Indonesia Barat', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.yellowChipBg,
+                  border: Border.all(color: AppColors.yellowChipBorder),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('WIB', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.yellowInk)),
               ),
             ],
           ),

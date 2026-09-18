@@ -10,7 +10,9 @@ import '../theme/app_theme.dart';
 class ActivityTile extends StatelessWidget {
   final Activity activity;
   final DailyLog? log;
-  final bool isActive;
+
+  /// Jam WIB sekarang berada di dalam rentang kegiatan ini.
+  final bool isRunning;
   final bool isLast;
   final VoidCallback onCheck;
   final VoidCallback onCancel;
@@ -19,7 +21,7 @@ class ActivityTile extends StatelessWidget {
     super.key,
     required this.activity,
     required this.log,
-    required this.isActive,
+    required this.isRunning,
     required this.isLast,
     required this.onCheck,
     required this.onCancel,
@@ -43,12 +45,12 @@ class ActivityTile extends StatelessWidget {
             ? AppColors.orange
             : isDone
                 ? AppColors.yellow
-                : isActive
+                : isRunning
                     ? AppColors.orange
                     : AppColors.cancelledDot;
-    final dotHalo = isActive && !hasStatus ? AppColors.orange.withValues(alpha: 0.16) : Colors.white;
+    final dotHalo = isRunning && !hasStatus ? AppColors.orange.withValues(alpha: 0.16) : Colors.white;
 
-    final showActions = isActive && !hasStatus;
+    final showActions = isRunning && !hasStatus;
     final cardBorder = showActions
         ? AppColors.yellowBorder2
         : isCancelled
@@ -70,7 +72,9 @@ class ActivityTile extends StatelessWidget {
             ? 'Selesai tepat waktu'
             : isCancelled
                 ? 'Dibatalkan'
-                : activity.category;
+                : showActions
+                    ? 'Sedang berlangsung'
+                    : activity.category;
 
     return IntrinsicHeight(
       child: Row(

@@ -9,9 +9,14 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi kon
 - **Hari Ini** — timeline vertikal dari satu template kegiatan tetap (di-*seed* statis di
   `lib/data/seed_activities.dart`), dengan chip hari beruntun dan kartu progres (selesai /
   terlambat / dibatalkan).
-- **Tandai selesai** — cukup satu ketuk; status ditentukan otomatis: *selesai tepat waktu* atau
-  *terlambat* jika ditandai lebih dari 35 menit (`ScheduleProvider.toleranceMinutes`) setelah jam
-  mulai.
+- **Tampilan default polos** — kartu kegiatan tampil apa adanya. Tombol **Batalkan** dan **Tandai
+  selesai** hanya muncul pada kegiatan yang jam WIB-nya sedang berjalan (di dalam rentang
+  mulai–selesai); kegiatan lain tetap bisa ditandai lewat lingkaran centang di kanan kartu.
+- **Tandai selesai** — status ditentukan otomatis: *selesai tepat waktu*, atau *terlambat* bila
+  ditandai lebih dari 35 menit (`ScheduleProvider.toleranceMinutes`) setelah rentang waktunya
+  **usai**.
+- **Waktu Indonesia Barat** — seluruh perhitungan (jendela aktif, keterlambatan, tanggal log,
+  streak, statistik) memakai WIB/UTC+7 lewat `lib/utils/wib.dart`, bukan zona waktu perangkat.
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas
   ("Lainnya"), tercatat ke riwayat dengan tanggal & jam.
 - **Kalender** — grid bulanan dengan titik status per hari (sempurna / ada terlambat / ada
@@ -41,6 +46,7 @@ lib/
     notification_feed_screen.dart
   widgets/                       # ActivityTile, dialog alasan batal, ring chart
   theme/app_theme.dart           # palet & tema persis dari desain
+  utils/wib.dart                 # helper waktu WIB (UTC+7)
 ```
 
 ## Menjalankan

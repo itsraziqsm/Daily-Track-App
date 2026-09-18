@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
+import '../utils/wib.dart';
 import '../widgets/activity_tile.dart';
 import '../widgets/skip_reason_dialog.dart';
 
@@ -14,7 +15,7 @@ class HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ScheduleProvider>();
-    final todayLabel = DateFormat('EEEE, d MMMM', 'id_ID').format(DateTime.now());
+    final todayLabel = DateFormat('EEEE, d MMMM', 'id_ID').format(wibNow());
     final activities = provider.activities;
     final pctDone = provider.totalCount == 0 ? 0.0 : provider.onTimeCount / provider.totalCount;
     final pctLate = provider.totalCount == 0 ? 0.0 : provider.lateCount / provider.totalCount;
@@ -138,7 +139,7 @@ class HomeTab extends StatelessWidget {
           ActivityTile(
             activity: activities[i],
             log: provider.todayLogs[activities[i].id],
-            isActive: provider.isActive(activities[i]),
+            isRunning: provider.isRunning(activities[i]),
             isLast: i == activities.length - 1,
             onCheck: () => provider.toggle(activities[i]),
             onCancel: () async {
