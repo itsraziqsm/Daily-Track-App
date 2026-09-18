@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -20,6 +22,11 @@ class NotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
+  /// Menjadi false bila sisi native plugin tidak tersedia — misalnya setelah
+  /// hot restart yang menambahkan plugin tanpa build ulang. Notifikasi adalah
+  /// fitur sampingan, jadi kegagalannya tidak boleh menjatuhkan aplikasi.
+  bool _available = true;
+
   static const _channelId = 'jadwal_harian';
   static const _channelName = 'Jadwal Harian';
   static const _channelDescription = 'Pengingat kegiatan dan ringkasan harian';
@@ -31,20 +38,34 @@ class NotificationService {
 
   bool get isSupported => Platform.isAndroid || Platform.isIOS;
 
+  /// False bila plugin gagal disiapkan; dipakai UI untuk memberi pesan yang tepat.
+  bool get isAvailable => _available;
+
   Future<void> init() async {
-    if (_ready || !isSupported) return;
-    tzdata.initializeTimeZones();
-    await _plugin.initialize(
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        iOS: DarwinInitializationSettings(
-          requestAlertPermission: false,
-          requestBadgePermission: false,
-          requestSoundPermission: false,
+    if (_ready || !_available || !isSupported) return;
+    try {
+      tzdata.initializeTimeZones();
+      await _plugin.initialize(
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: DarwinInitializationSettings(
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
+          ),
         ),
-      ),
-    );
-    _ready = true;
+      );
+      _ready = true;
+    } on MissingPluginException catch (e) {
+      _available = false;
+      debugPrint(
+        'Notifikasi dimatikan: sisi native plugin belum terpasang. '
+        'Hentikan aplikasi lalu jalankan ulang (bukan hot restart). $e',
+      );
+    } catch (e) {
+      _available = false;
+      debugPrint('Notifikasi dimatikan: gagal inisialisasi. $e');
+    }
   }
 
   /// Meminta izin notifikasi ke sistem. Di Android 13+ ini memunculkan dialog
@@ -52,6 +73,7 @@ class NotificationService {
   Future<bool> requestPermission() async {
     if (!isSupported) return false;
     await init();
+    if (!_ready) return false;
     if (Platform.isAndroid) {
       final android =
           _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -68,6 +90,7 @@ class NotificationService {
   Future<bool> hasPermission() async {
     if (!isSupported) return false;
     await init();
+    if (!_ready) return false;
     if (!Platform.isAndroid) return true;
     final android =
         _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -85,6 +108,7 @@ class NotificationService {
   }) async {
     if (!isSupported) return;
     await init();
+    if (!_ready) return;
     await _plugin.cancelAll();
 
     if (eachActivity) {
@@ -123,6 +147,7 @@ class NotificationService {
   Future<void> cancelAll() async {
     if (!isSupported) return;
     await init();
+    if (!_ready) return;
     await _plugin.cancelAll();
   }
 

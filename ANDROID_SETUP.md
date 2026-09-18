@@ -82,6 +82,33 @@ flutter run
 Dialog izin muncul saat pertama kali menyalakan salah satu toggle di
 **Pengaturan → Pengingat**, bukan saat aplikasi dibuka.
 
+## Kalau muncul `MissingPluginException`
+
+```
+MissingPluginException(No implementation found for method initialize
+on channel dexterous.com/flutter/local_notifications)
+```
+
+Artinya sisi native plugin belum ikut terpasang di aplikasi yang sedang berjalan.
+Hampir selalu penyebabnya **hot reload/hot restart setelah menambah plugin baru** —
+keduanya hanya menukar kode Dart, sedangkan plugin butuh build ulang penuh.
+
+Hentikan aplikasi sepenuhnya (bukan hot restart), lalu:
+
+```bash
+flutter clean
+flutter pub get
+flutter run
+```
+
+Kalau masih muncul setelah build bersih, periksa `android/app/src/main/AndroidManifest.xml`
+sudah memuat kedua `<receiver>` di atas, dan `flutter doctor` tidak melaporkan masalah
+pada toolchain Android.
+
+Aplikasi sendiri tidak ikut gagal kalau ini terjadi: notifikasi dimatikan diam-diam,
+sisanya (jadwal, template, statistik) tetap berjalan, dan toggle pengingat akan
+memberi tahu bahwa notifikasi belum aktif di build tersebut.
+
 ## Catatan perilaku
 
 - Penjadwalan memakai mode **inexact** (`AndroidScheduleMode.inexactAllowWhileIdle`),

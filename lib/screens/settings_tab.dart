@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/schedule_provider.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_time.dart';
 import '../widgets/timezone_sheet.dart';
@@ -148,13 +149,17 @@ class SettingsTab extends StatelessWidget {
   Future<void> _toggle(BuildContext context, String key) async {
     final messenger = ScaffoldMessenger.of(context);
     final ok = await context.read<ScheduleProvider>().toggleNotification(key);
-    if (!ok) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Izin notifikasi belum diberikan. Aktifkan lewat pengaturan sistem.'),
+    if (ok) return;
+    final unavailable = !NotificationService.instance.isAvailable;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          unavailable
+              ? 'Notifikasi belum aktif di build ini. Hentikan aplikasi lalu jalankan ulang.'
+              : 'Izin notifikasi belum diberikan. Aktifkan lewat pengaturan sistem.',
         ),
-      );
-    }
+      ),
+    );
   }
 }
 
