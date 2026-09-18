@@ -18,7 +18,7 @@ class NotificationFeedScreen extends StatelessWidget {
     final items = provider.allLogs.take(20).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
         title: const Text('Notifikasi', style: TextStyle(fontFamily: AppFonts.title, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.ink)),
         actions: [

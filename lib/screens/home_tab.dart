@@ -99,29 +99,19 @@ class HomeTab extends StatelessWidget {
                     'PROGRES HARI INI',
                     style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: AppColors.yellowInk3),
                   ),
-                  Text(
-                    '${provider.doneCount}/${provider.totalCount} selesai',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.ink),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(end: provider.doneCount.toDouble()),
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, _) => Text(
+                      '${value.round()}/${provider.totalCount} selesai',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.ink),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 11),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: SizedBox(
-                  height: 9,
-                  child: Row(
-                    children: [
-                      Expanded(flex: (pctDone * 1000).round().clamp(0, 1000), child: Container(color: AppColors.yellow)),
-                      Expanded(flex: (pctLate * 1000).round().clamp(0, 1000), child: Container(color: AppColors.orange)),
-                      Expanded(
-                        flex: (1000 - (pctDone * 1000).round() - (pctLate * 1000).round()).clamp(0, 1000),
-                        child: Container(color: const Color(0xFFF3E6C8)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _ProgressBar(donePct: pctDone, latePct: pctLate),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 14,
@@ -168,6 +158,61 @@ class HomeTab extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Bar progres tiga lapis: jalur dasar, porsi terlambat, lalu porsi selesai
+/// tepat waktu di atasnya. Tiap lapis melebar sendiri saat angkanya berubah.
+class _ProgressBar extends StatelessWidget {
+  final double donePct;
+  final double latePct;
+
+  const _ProgressBar({required this.donePct, required this.latePct});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(99),
+      child: SizedBox(
+        height: 9,
+        child: Stack(
+          children: [
+            Positioned.fill(child: Container(color: const Color(0xFFF3E6C8))),
+            _ProgressSegment(fraction: donePct + latePct, color: AppColors.orange),
+            _ProgressSegment(fraction: donePct, color: AppColors.yellow),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProgressSegment extends StatelessWidget {
+  final double fraction;
+  final Color color;
+
+  const _ProgressSegment({required this.fraction, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: fraction.clamp(0.0, 1.0)),
+        duration: const Duration(milliseconds: 450),
+        // Sedikit melewati target lalu mengendap, seperti transisi di desain.
+        curve: const Cubic(0.3, 1.2, 0.4, 1),
+        builder: (context, value, _) => Align(
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: value.clamp(0.0, 1.0),
+            heightFactor: 1,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(99)),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Tiga famili huruf, semuanya dibundel lokal di `assets/fonts/`.
 class AppFonts {
@@ -61,10 +62,20 @@ ThemeData buildAppTheme() {
       displayColor: AppColors.ink,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.card,
-      foregroundColor: AppColors.ink,
+      // Sewarna dengan latar utama. surfaceTint & scrolledUnderElevation
+      // dimatikan supaya Material 3 tidak menaburkan warna elevasi saat konten
+      // digulung ke belakang app bar.
+      backgroundColor: AppColors.bg,
+      surfaceTintColor: Colors.transparent,
+      scrolledUnderElevation: 0,
       elevation: 0,
+      foregroundColor: AppColors.ink,
       centerTitle: false,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
     ),
     dividerColor: AppColors.line,
   );

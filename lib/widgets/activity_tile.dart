@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../models/activity.dart';
@@ -117,7 +118,9 @@ class ActivityTile extends StatelessWidget {
           Column(
             children: [
               const SizedBox(height: 16),
-              Container(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOut,
                 width: 11,
                 height: 11,
                 decoration: BoxDecoration(
@@ -136,7 +139,9 @@ class ActivityTile extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
                 padding: const EdgeInsets.all(13),
                 decoration: BoxDecoration(
                   color: cardBg,
@@ -178,8 +183,13 @@ class ActivityTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 11),
                         GestureDetector(
-                          onTap: onCheck,
-                          child: Container(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onCheck();
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 240),
+                            curve: Curves.easeOut,
                             width: 34,
                             height: 34,
                             alignment: Alignment.center,
@@ -188,9 +198,25 @@ class ActivityTile extends StatelessWidget {
                               color: checkBg,
                               border: Border.all(color: accent, width: 2),
                             ),
-                            child: checkIcon == null
-                                ? null
-                                : Icon(checkIcon, size: 16, color: checkInk),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 280),
+                              // Muncul dengan sedikit melambung, meniru keyframe
+                              // "dtpop" di desain.
+                              switchInCurve: Curves.easeOutBack,
+                              switchOutCurve: Curves.easeIn,
+                              transitionBuilder: (child, animation) => ScaleTransition(
+                                scale: animation,
+                                child: FadeTransition(opacity: animation, child: child),
+                              ),
+                              child: checkIcon == null
+                                  ? const SizedBox.shrink(key: ValueKey('kosong'))
+                                  : Icon(
+                                      checkIcon,
+                                      key: ValueKey(checkIcon.codePoint),
+                                      size: 16,
+                                      color: checkInk,
+                                    ),
+                            ),
                           ),
                         ),
                       ],
@@ -223,7 +249,10 @@ class ActivityTile extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: GestureDetector(
-                              onTap: onCheck,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                onCheck();
+                              },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 8),
                                 alignment: Alignment.center,
