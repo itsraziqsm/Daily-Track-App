@@ -155,6 +155,7 @@ class HomeTab extends StatelessWidget {
                   log: provider.todayLogs[activities[i].id],
                   isRunning: provider.isRunning(activities[i]),
                   isLocked: provider.isLocked(activities[i]),
+                  isUpcoming: provider.isUpcoming(activities[i]),
                   isLast: i == activities.length - 1,
                   onCheck: () => provider.toggle(activities[i]),
                   onCancel: () async {

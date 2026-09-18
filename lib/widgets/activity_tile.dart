@@ -16,8 +16,11 @@ class ActivityTile extends StatelessWidget {
   /// Jam sekarang berada di dalam rentang kegiatan ini.
   final bool isRunning;
 
-  /// Sudah ditandai dan sudah lewat masa toleransi — catatannya final.
+  /// Catatannya final: sudah lewat masa toleransi, atau berstatus terlambat.
   final bool isLocked;
+
+  /// Jam mulainya belum tiba — belum bisa ditandai selesai.
+  final bool isUpcoming;
   final bool isLast;
   final VoidCallback onCheck;
   final VoidCallback onCancel;
@@ -28,6 +31,7 @@ class ActivityTile extends StatelessWidget {
     required this.log,
     required this.isRunning,
     required this.isLocked,
+    required this.isUpcoming,
     required this.isLast,
     required this.onCheck,
     required this.onCancel,
@@ -88,6 +92,7 @@ class ActivityTile extends StatelessWidget {
                     ? 'Sedang berlangsung'
                     : activity.category;
     final metaText = isLocked ? '$statusText · terkunci' : statusText;
+    final canCheck = !isLocked && !isUpcoming;
 
     return IntrinsicHeight(
       child: Row(
@@ -144,7 +149,18 @@ class ActivityTile extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: AnimatedContainer(
+              child: GestureDetector(
+                // Tahan kartu untuk membatalkan, termasuk sebelum kegiatannya
+                // dimulai.
+                onLongPress: () {
+                  if (isLocked) {
+                    _explainBlocked(context);
+                    return;
+                  }
+                  HapticFeedback.mediumImpact();
+                  onCancel();
+                },
+                child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
                 padding: const EdgeInsets.all(13),
@@ -188,12 +204,14 @@ class ActivityTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 11),
                         GestureDetector(
-                          onTap: isLocked
-                              ? null
-                              : () {
-                                  HapticFeedback.selectionClick();
-                                  onCheck();
-                                },
+                          onTap: () {
+                            if (!canCheck) {
+                              _explainBlocked(context);
+                              return;
+                            }
+                            HapticFeedback.selectionClick();
+                            onCheck();
+                          },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 240),
                             curve: Curves.easeOut,
@@ -257,6 +275,10 @@ class ActivityTile extends StatelessWidget {
                           Expanded(
                             child: GestureDetector(
                               onTap: () {
+                                if (!canCheck) {
+                                  _explainBlocked(context);
+                                  return;
+                                }
                                 HapticFeedback.selectionClick();
                                 onCheck();
                               },
@@ -306,6 +328,7 @@ class ActivityTile extends StatelessWidget {
                       ),
                     ],
                   ],
+                  ),
                 ),
               ),
             ),
@@ -313,5 +336,15 @@ class ActivityTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Memberi tahu kenapa ketukan tidak berpengaruh, alih-alih diam saja.
+  void _explainBlocked(BuildContext context) {
+    final message = isLocked
+        ? 'Catatan ini sudah final dan tidak bisa diubah.'
+        : 'Kegiatan belum dimulai. Tahan kartu untuk membatalkannya lebih awal.';
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }

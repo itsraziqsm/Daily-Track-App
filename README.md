@@ -20,8 +20,12 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
   tersimpan di database. Seluruh perhitungan (jendela aktif, keterlambatan, tanggal log, streak,
   statistik) memakai zona itu lewat `lib/utils/app_time.dart`, bukan zona waktu perangkat.
   Ketiganya offset tetap dan Indonesia tanpa DST, jadi tidak perlu basis data zona waktu IANA.
-- **Catatan terkunci** — kegiatan yang sudah ditandai dan sudah lewat 35 menit setelah rentangnya
-  usai tidak bisa diubah lagi.
+- **Guard status** — kegiatan yang jam mulainya belum tiba tidak bisa dicentang; kegiatan
+  berstatus *terlambat* langsung final (tanpa ini, mencabut centang lalu menandai ulang akan
+  menghapus keterlambatannya); dan catatan yang sudah lewat 35 menit dari akhir rentang juga
+  terkunci. Ketukan yang terblokir menjelaskan alasannya lewat snackbar.
+- **Batalkan lebih awal** — tahan (long-press) kartu mana pun yang belum terkunci untuk membuka
+  sheet alasan, termasuk kegiatan yang belum dimulai.
 - **Data lokal** — sqflite dengan skema v3: `daily_logs`, `app_settings`, `templates`,
   `template_activities`, `day_assignments`. Migrasi dari skema lama menjaga log yang sudah ada.
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas

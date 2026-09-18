@@ -199,14 +199,28 @@ class ScheduleProvider extends ChangeNotifier {
   bool isPastGrace(Activity activity) =>
       !isRunning(activity) && minutesSinceEnd(activity) > toleranceMinutes;
 
-  /// Kegiatan yang sudah ditandai dan sudah lewat masa toleransi tidak bisa
-  /// diubah lagi — catatannya dianggap final.
-  bool isLocked(Activity activity) =>
-      _todayLogs.containsKey(activity.id) && isPastGrace(activity);
+  /// Kegiatan yang jam mulainya belum tiba. Belum bisa ditandai selesai —
+  /// tapi masih boleh dibatalkan lebih awal.
+  bool isUpcoming(Activity activity) {
+    if (isRunning(activity)) return false;
+    // Rentang lintas tengah malam yang tidak sedang berjalan berarti instansnya
+    // sudah usai pagi tadi, jadi tidak pernah dianggap "belum dimulai".
+    if (activity.endMinutes <= activity.startMinutes) return false;
+    return AppTime.minutesOfDay() < activity.startMinutes;
+  }
+
+  /// Catatan yang sudah final dan tidak bisa diubah lagi: sudah lewat masa
+  /// toleransi, atau berstatus terlambat. Tanpa aturan kedua, mencabut centang
+  /// lalu menandai ulang akan menghapus keterlambatannya.
+  bool isLocked(Activity activity) {
+    final log = _todayLogs[activity.id];
+    if (log == null) return false;
+    return log.status == LogStatus.late || isPastGrace(activity);
+  }
 
   /// Tandai kegiatan: otomatis "selesai" atau "terlambat" berdasarkan jendela toleransi.
   Future<void> toggle(Activity activity) async {
-    if (isLocked(activity)) return;
+    if (isLocked(activity) || isUpcoming(activity)) return;
     final existing = _todayLogs[activity.id];
     if (existing != null) {
       await _db.deleteLogForActivityOnDate(activity.id, todayKey);
@@ -228,6 +242,7 @@ class ScheduleProvider extends ChangeNotifier {
   }
 
   Future<void> markCancelled(Activity activity, String reason) async {
+    if (isLocked(activity)) return;
     final log = DailyLog(
       activityId: activity.id,
       date: todayKey,
