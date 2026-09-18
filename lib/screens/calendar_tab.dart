@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/daily_log.dart';
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
-import '../utils/wib.dart';
+import '../utils/app_time.dart';
 
 const _dowLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
@@ -19,7 +19,7 @@ class CalendarTab extends StatefulWidget {
 }
 
 class _CalendarTabState extends State<CalendarTab> {
-  late DateTime _month = DateTime(wibNow().year, wibNow().month);
+  late DateTime _month = DateTime(AppTime.now().year, AppTime.now().month);
 
   void _shiftMonth(int delta) {
     setState(() => _month = DateTime(_month.year, _month.month + delta));
@@ -29,7 +29,7 @@ class _CalendarTabState extends State<CalendarTab> {
   Widget build(BuildContext context) {
     final provider = context.watch<ScheduleProvider>();
     final byDate = provider.logsByDate;
-    final today = wibNow();
+    final today = AppTime.now();
     final monthLabel = DateFormat('MMMM yyyy', 'id_ID').format(_month);
 
     final firstOfMonth = DateTime(_month.year, _month.month, 1);
@@ -130,9 +130,9 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final key = wibDateKey(date);
+    final key = AppTime.dateKey(date);
     final dayLogs = logs[key];
-    final isToday = key == wibDateKey(today);
+    final isToday = key == AppTime.dateKey(today);
 
     Color dot = Colors.transparent;
     if (dayLogs != null && dayLogs.isNotEmpty) {

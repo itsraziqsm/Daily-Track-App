@@ -19,13 +19,14 @@ class ShellScreen extends StatefulWidget {
 }
 
 class _ShellScreenState extends State<ShellScreen> {
+  final _pageController = PageController();
   int _tab = 0;
 
-  static const _tabs = [
-    (icon: LucideIcons.listTodo, label: 'Hari Ini'),
-    (icon: LucideIcons.calendarDays, label: 'Kalender'),
-    (icon: LucideIcons.chartColumn, label: 'Statistik'),
-    (icon: LucideIcons.settings, label: 'Pengaturan'),
+  static const _tabIcons = [
+    (icon: LucideIcons.listTodo, tooltip: 'Hari Ini'),
+    (icon: LucideIcons.calendarDays, tooltip: 'Kalender'),
+    (icon: LucideIcons.chartColumn, tooltip: 'Statistik'),
+    (icon: LucideIcons.settings, tooltip: 'Pengaturan'),
   ];
 
   @override
@@ -34,6 +35,21 @@ class _ShellScreenState extends State<ShellScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ScheduleProvider>().load();
     });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _goToTab(int index) {
+    setState(() => _tab = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -73,47 +89,73 @@ class _ShellScreenState extends State<ShellScreen> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _tab,
-        children: const [HomeTab(), CalendarTab(), StatsTab(), SettingsTab()],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) => setState(() => _tab = index),
+        children: const [
+          _KeepAlive(child: HomeTab()),
+          _KeepAlive(child: CalendarTab()),
+          _KeepAlive(child: StatsTab()),
+          _KeepAlive(child: SettingsTab()),
+        ],
       ),
       bottomNavigationBar: Container(
-        height: 84,
-        padding: const EdgeInsets.only(top: 11),
+        height: 64,
         decoration: const BoxDecoration(
           color: Colors.white,
           border: Border(top: BorderSide(color: AppColors.line)),
         ),
-        child: Row(
-          children: [
-            for (var i = 0; i < _tabs.length; i++)
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _tab = i),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    children: [
-                      Icon(
-                        _tabs[i].icon,
-                        size: 23,
-                        color: _tab == i ? AppColors.orange : const Color(0xFF9C927F),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        _tabs[i].label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: _tab == i ? AppColors.ink : AppColors.inkMuted,
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              for (var i = 0; i < _tabIcons.length; i++)
+                Expanded(
+                  child: Tooltip(
+                    message: _tabIcons[i].tooltip,
+                    child: GestureDetector(
+                      onTap: () => _goToTab(i),
+                      behavior: HitTestBehavior.opaque,
+                      child: Center(
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutBack,
+                          scale: _tab == i ? 1.08 : 1,
+                          child: Icon(
+                            _tabIcons[i].icon,
+                            size: 24,
+                            color: _tab == i ? AppColors.orange : const Color(0xFF9C927F),
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+}
+
+/// Menjaga state tiap halaman (posisi gulir, bulan terpilih) saat digeser
+/// keluar-masuk viewport PageView.
+class _KeepAlive extends StatefulWidget {
+  final Widget child;
+  const _KeepAlive({required this.child});
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

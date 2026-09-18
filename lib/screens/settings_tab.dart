@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
+import '../utils/app_time.dart';
+import '../widgets/timezone_sheet.dart';
 
 /// Tab "Pengaturan" — info template (tetap, tidak diedit lewat UI), jendela
 /// toleransi terlambat, dan preferensi pengingat.
@@ -67,76 +69,20 @@ class SettingsTab extends StatelessWidget {
         const SizedBox(height: 26),
         const Text('ATURAN PELACAKAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
         const SizedBox(height: 11),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.line, width: 1.5),
-            borderRadius: BorderRadius.circular(18),
-            color: Colors.white,
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Jendela toleransi terlambat', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
-                    SizedBox(height: 3),
-                    Text('Dicentang lebih dari ini setelah rentang usai dihitung terlambat', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.yellowChipBg,
-                  border: Border.all(color: AppColors.yellowChipBorder),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text('${ScheduleProvider.toleranceMinutes}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.yellowInk)),
-                    const SizedBox(width: 3),
-                    const Text('mnt', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.yellowInk2)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        const _RuleRow(
+          label: 'Jendela toleransi terlambat',
+          sub: 'Dicentang lebih dari ini setelah rentang usai dihitung terlambat',
+          value: '${ScheduleProvider.toleranceMinutes} mnt',
         ),
         const SizedBox(height: 9),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.line, width: 1.5),
-            borderRadius: BorderRadius.circular(18),
-            color: Colors.white,
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Zona waktu', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
-                    SizedBox(height: 3),
-                    Text('Semua jadwal mengikuti Waktu Indonesia Barat', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.yellowChipBg,
-                  border: Border.all(color: AppColors.yellowChipBorder),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text('WIB', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.yellowInk)),
-              ),
-            ],
-          ),
+        _RuleRow(
+          label: 'Zona waktu',
+          sub: 'Semua jadwal mengikuti ${provider.timeZone.label}',
+          value: provider.timeZone.code,
+          onTap: () async {
+            final picked = await showTimeZoneSheet(context, provider.timeZone);
+            if (picked != null) await provider.setTimeZone(picked);
+          },
         ),
         const SizedBox(height: 26),
         const Text('PENGINGAT', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
@@ -162,6 +108,61 @@ class SettingsTab extends StatelessWidget {
           onTap: () => provider.toggleNotification('night'),
         ),
       ],
+    );
+  }
+}
+
+/// Baris aturan pelacakan. Tampil netral; menampilkan chevron dan merespons
+/// ketukan hanya bila [onTap] diisi.
+class _RuleRow extends StatelessWidget {
+  final String label;
+  final String sub;
+  final String value;
+  final VoidCallback? onTap;
+
+  const _RuleRow({required this.label, required this.sub, required this.value, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.line, width: 1.5),
+          borderRadius: BorderRadius.circular(18),
+          color: Colors.white,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
+                  const SizedBox(height: 3),
+                  Text(sub, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppColors.rowBg,
+                border: Border.all(color: AppColors.line),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(value, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppColors.ink)),
+            ),
+            if (onTap != null) ...[
+              const SizedBox(width: 6),
+              const Icon(LucideIcons.chevronRight, size: 18, color: AppColors.inkMuted2),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

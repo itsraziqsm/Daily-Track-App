@@ -13,8 +13,11 @@ class ActivityTile extends StatelessWidget {
   final Activity activity;
   final DailyLog? log;
 
-  /// Jam WIB sekarang berada di dalam rentang kegiatan ini.
+  /// Jam sekarang berada di dalam rentang kegiatan ini.
   final bool isRunning;
+
+  /// Sudah ditandai dan sudah lewat masa toleransi — catatannya final.
+  final bool isLocked;
   final bool isLast;
   final VoidCallback onCheck;
   final VoidCallback onCancel;
@@ -24,6 +27,7 @@ class ActivityTile extends StatelessWidget {
     required this.activity,
     required this.log,
     required this.isRunning,
+    required this.isLocked,
     required this.isLast,
     required this.onCheck,
     required this.onCancel,
@@ -74,7 +78,7 @@ class ActivityTile extends StatelessWidget {
                 ? LucideIcons.x
                 : null;
 
-    final metaText = isLate
+    final statusText = isLate
         ? 'Selesai di luar toleransi ${ScheduleProvider.toleranceMinutes} mnt'
         : isDone
             ? 'Selesai tepat waktu'
@@ -83,6 +87,7 @@ class ActivityTile extends StatelessWidget {
                 : showActions
                     ? 'Sedang berlangsung'
                     : activity.category;
+    final metaText = isLocked ? '$statusText · terkunci' : statusText;
 
     return IntrinsicHeight(
       child: Row(
@@ -183,10 +188,12 @@ class ActivityTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 11),
                         GestureDetector(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            onCheck();
-                          },
+                          onTap: isLocked
+                              ? null
+                              : () {
+                                  HapticFeedback.selectionClick();
+                                  onCheck();
+                                },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 240),
                             curve: Curves.easeOut,

@@ -23,7 +23,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'jadwal_harian.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE daily_logs (
@@ -36,7 +36,33 @@ class DatabaseHelper {
             UNIQUE(activityId, date)
           )
         ''');
+        await db.execute(_createSettings);
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) await db.execute(_createSettings);
+      },
+    );
+  }
+
+  static const _createSettings = '''
+    CREATE TABLE app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  ''';
+
+  Future<String?> getSetting(String key) async {
+    final db = await database;
+    final rows = await db.query('app_settings', where: 'key = ?', whereArgs: [key], limit: 1);
+    return rows.isEmpty ? null : rows.first['value'] as String;
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    final db = await database;
+    await db.insert(
+      'app_settings',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 

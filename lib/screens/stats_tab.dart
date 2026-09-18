@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
-import '../utils/wib.dart';
+import '../utils/app_time.dart';
 import '../widgets/discipline_ring.dart';
 
 const _dayInitials = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
@@ -138,7 +138,7 @@ class StatsTab extends StatelessWidget {
   }
 
   static bool _isToday(DateTime d) {
-    final now = wibNow();
+    final now = AppTime.now();
     return d.year == now.year && d.month == now.month && d.day == now.day;
   }
 }

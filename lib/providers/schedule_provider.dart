@@ -6,7 +6,7 @@ import '../data/seed_activities.dart';
 import '../db/database_helper.dart';
 import '../models/activity.dart';
 import '../models/daily_log.dart';
-import '../utils/wib.dart';
+import '../utils/app_time.dart';
 
 class ScheduleProvider extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper.instance;
@@ -40,7 +40,7 @@ class ScheduleProvider extends ChangeNotifier {
     'night': false,
   };
 
-  String get todayKey => wibDateKey(wibNow());
+  String get todayKey => AppTime.dateKey(AppTime.now());
 
   Map<int, DailyLog> get todayLogs => _todayLogs;
   List<DailyLog> get allLogs => _allLogs;
@@ -57,17 +57,31 @@ class ScheduleProvider extends ChangeNotifier {
       _todayLogs.values.where((l) => l.status == LogStatus.cancelled).length;
   int get totalCount => activities.length;
 
+  AppTimeZone get timeZone => AppTime.zone;
+
+  /// Mengganti zona waktu: tersimpan, lalu log hari ini dimuat ulang karena
+  /// batas "hari ini" bisa ikut bergeser.
+  Future<void> setTimeZone(AppTimeZone zone) async {
+    if (zone == AppTime.zone) return;
+    AppTime.zone = zone;
+    await _db.setSetting(_timeZoneKey, zone.name);
+    await load();
+  }
+
+  static const _timeZoneKey = 'timeZone';
+
   Future<void> load() async {
+    AppTime.zone = AppTimeZoneInfo.fromName(await _db.getSetting(_timeZoneKey));
     final logs = await _db.logsForDate(todayKey);
     _todayLogs = {for (final l in logs) l.activityId: l};
     _allLogs = await _db.allLogs();
     notifyListeners();
   }
 
-  /// Kegiatan sedang berlangsung: jam WIB sekarang berada di dalam rentang
-  /// mulai–selesai. Hanya kegiatan inilah yang menampilkan opsi aksi.
+  /// Kegiatan sedang berlangsung: jam sekarang (menurut zona aktif) berada di
+  /// dalam rentang mulai–selesai. Hanya kegiatan inilah yang menampilkan aksi.
   bool isRunning(Activity activity) {
-    final now = wibMinutesOfDay();
+    final now = AppTime.minutesOfDay();
     final start = activity.startMinutes;
     final end = activity.endMinutes;
     if (end > start) return now >= start && now < end;
@@ -77,10 +91,23 @@ class ScheduleProvider extends ChangeNotifier {
 
   /// Menit berlalu sejak rentang kegiatan usai. Negatif berarti rentangnya
   /// belum selesai (atau belum dimulai) hari ini.
-  int minutesSinceEnd(Activity activity) => wibMinutesOfDay() - activity.endMinutes;
+  int minutesSinceEnd(Activity activity) => AppTime.minutesOfDay() - activity.endMinutes;
+
+  /// Rentang kegiatan sudah usai lebih dari jendela toleransi. Kegiatan yang
+  /// masih berlangsung tidak pernah termasuk — ini sekaligus menjaga kegiatan
+  /// lintas tengah malam (mis. Tidur 22.00–04.30), yang jam usainya secara
+  /// angka berada di belakang jam sekarang.
+  bool isPastGrace(Activity activity) =>
+      !isRunning(activity) && minutesSinceEnd(activity) > toleranceMinutes;
+
+  /// Kegiatan yang sudah ditandai dan sudah lewat masa toleransi tidak bisa
+  /// diubah lagi — catatannya dianggap final.
+  bool isLocked(Activity activity) =>
+      _todayLogs.containsKey(activity.id) && isPastGrace(activity);
 
   /// Tandai kegiatan: otomatis "selesai" atau "terlambat" berdasarkan jendela toleransi.
   Future<void> toggle(Activity activity) async {
+    if (isLocked(activity)) return;
     final existing = _todayLogs[activity.id];
     if (existing != null) {
       await _db.deleteLogForActivityOnDate(activity.id, todayKey);
@@ -89,15 +116,12 @@ class ScheduleProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    // Kegiatan yang masih berlangsung tidak pernah terlambat; ini juga menjaga
-    // kegiatan lintas tengah malam (mis. Tidur 22.00–04.30), yang jam usainya
-    // secara angka berada di belakang jam sekarang.
-    final late = !isRunning(activity) && minutesSinceEnd(activity) > toleranceMinutes;
+    final late = isPastGrace(activity);
     final log = DailyLog(
       activityId: activity.id,
       date: todayKey,
       status: late ? LogStatus.late : LogStatus.done,
-      timestamp: wibNow(),
+      timestamp: AppTime.now(),
     );
     await _db.upsertLog(log);
     _todayLogs[activity.id] = log;
@@ -111,7 +135,7 @@ class ScheduleProvider extends ChangeNotifier {
       date: todayKey,
       status: LogStatus.cancelled,
       reason: reason,
-      timestamp: wibNow(),
+      timestamp: AppTime.now(),
     );
     await _db.upsertLog(log);
     _todayLogs[activity.id] = log;
@@ -154,9 +178,9 @@ class ScheduleProvider extends ChangeNotifier {
   int get perfectStreak {
     final byDate = logsByDate;
     var streak = 0;
-    var day = wibNow().subtract(const Duration(days: 1));
+    var day = AppTime.now().subtract(const Duration(days: 1));
     while (true) {
-      final key = wibDateKey(day);
+      final key = AppTime.dateKey(day);
       final logs = byDate[key];
       if (logs == null || !_isPerfectDay(logs)) break;
       streak++;
@@ -170,8 +194,8 @@ class ScheduleProvider extends ChangeNotifier {
     final byDate = logsByDate;
     final out = <MapEntry<DateTime, double>>[];
     for (var i = 6; i >= 0; i--) {
-      final day = wibNow().subtract(Duration(days: i));
-      final logs = byDate[wibDateKey(day)] ?? [];
+      final day = AppTime.now().subtract(Duration(days: i));
+      final logs = byDate[AppTime.dateKey(day)] ?? [];
       final completed = logs.where((l) => l.status != LogStatus.cancelled).length;
       final pct = totalCount == 0 ? 0.0 : completed / totalCount;
       out.add(MapEntry(day, pct));
