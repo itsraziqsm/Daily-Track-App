@@ -109,15 +109,45 @@ Aplikasi sendiri tidak ikut gagal kalau ini terjadi: notifikasi dimatikan diam-d
 sisanya (jadwal, template, statistik) tetap berjalan, dan toggle pengingat akan
 memberi tahu bahwa notifikasi belum aktif di build tersebut.
 
+## Izin sudah diberi, tapi tidak ada notifikasi yang masuk
+
+Buka **Pengaturan → Pengingat → Tes notifikasi → Kirim**. Itu mengirim dua
+notifikasi lewat dua jalur berbeda, dan bedanya menunjukkan di mana rantainya
+putus:
+
+| Yang muncul | Artinya | Perbaikannya |
+|---|---|---|
+| Tidak ada sama sekali | Izin atau channel bermasalah | Cek izin notifikasi aplikasi di pengaturan sistem |
+| Hanya yang pertama (seketika) | Jalur alarm putus | Hampir pasti **receiver belum ada di AndroidManifest** — lihat bagian 1 di atas |
+| Keduanya muncul | Rantainya sehat | Pengingatnya memang belum jatuh tempo, atau ditahan manajemen baterai |
+
+**Receiver adalah penyebab paling sering.** Manifest milik plugin hanya
+mendeklarasikan izin, **bukan** receiver-nya — jadi `ScheduledNotificationReceiver`
+wajib ditulis sendiri di `android/app/src/main/AndroidManifest.xml`. Tanpa itu
+alarm tetap menyala tapi tidak ada yang memasang notifikasinya, dan tidak ada
+pesan error apa pun. Pastikan kedua `<receiver>` di bagian 1 benar-benar ada di
+dalam `<application>`.
+
+**Manajemen baterai pabrikan.** Xiaomi/POCO (MIUI), Oppo/Realme (ColorOS),
+Vivo (Funtouch), dan Samsung (One UI) mematikan alarm terjadwal secara agresif.
+Di pengaturan sistem, untuk aplikasi ini aktifkan **Autostart** dan setel
+baterai ke **Tidak dibatasi / No restrictions**.
+
+**Jumlah terjadwal.** Baris "Tes notifikasi" menampilkan berapa notifikasi yang
+benar-benar tersimpan di antrean sistem. Kalau angkanya 0 padahal toggle
+menyala, penjadwalannya yang gagal, bukan pengirimannya.
+
+**Waktu jatuh tempo.** Pengingat kegiatan muncul 10 menit sebelum jam mulai,
+ringkasan pagi 06:00, ringkasan malam 21:30 — tidak ada yang langsung muncul
+begitu toggle dinyalakan.
+
 ## Catatan perilaku
 
-- Penjadwalan memakai mode **inexact** (`AndroidScheduleMode.inexactAllowWhileIdle`),
-  jadi tidak butuh persetujuan "alarm & pengingat" khusus di Android 12+ dan
-  aman dari penolakan Play Store. Konsekuensinya notifikasi bisa meleset
-  beberapa menit saat perangkat sedang irit daya. Kalau kamu butuh presisi
-  menit, ganti ke `AndroidScheduleMode.exactAllowWhileIdle` di
-  `lib/services/notification_service.dart` — izin `SCHEDULE_EXACT_ALARM` sudah
-  diminta oleh kode.
+- Penjadwalan memakai **alarm presis** (`AndroidScheduleMode.exactAllowWhileIdle`),
+  karena pengingat "10 menit sebelum mulai" kehilangan gunanya kalau digeser
+  Doze berjam-jam. Kalau sistem menolak izin alarm presis, kode otomatis turun
+  ke mode inexact alih-alih gagal seluruhnya, dan baris "Tes notifikasi" di
+  Pengaturan menandainya.
 - Jam pengingat dihitung pada zona waktu yang dipilih di aplikasi (WIB/WITA/WIT),
   lalu dikonversi ke instan UTC. Jadi pengingat tetap jatuh pada jam yang benar
   meskipun zona waktu perangkat berbeda.

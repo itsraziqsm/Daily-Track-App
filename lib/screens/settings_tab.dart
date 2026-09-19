@@ -140,8 +140,36 @@ class SettingsTab extends StatelessWidget {
           value: provider.notificationPrefs['night'] ?? false,
           onTap: () => _toggle(context, 'night'),
         ),
+        const SizedBox(height: 9),
+        _RuleRow(
+          label: 'Tes notifikasi',
+          sub: '${provider.pendingNotifications} terjadwal di sistem'
+              '${provider.exactAlarmsAllowed ? '' : ' · alarm presis ditolak'}',
+          value: 'Kirim',
+          onTap: () => _sendTest(context),
+        ),
       ],
     );
+  }
+
+  /// Mengirim dua notifikasi uji: satu seketika, satu lewat jalur terjadwal.
+  /// Perbedaan hasilnya menunjukkan di mana rantainya putus.
+  Future<void> _sendTest(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await context.read<ScheduleProvider>().sendTestNotification();
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 8),
+          content: Text(
+            ok
+                ? 'Satu notifikasi dikirim sekarang, satu lagi dijadwalkan 10 detik lagi. '
+                    'Kalau yang kedua tidak muncul, lihat ANDROID_SETUP.md.'
+                : 'Notifikasi belum aktif di build ini.',
+          ),
+        ),
+      );
   }
 
   /// Menyalakan pengingat sekaligus meminta izin sistem. Kalau izinnya ditolak,

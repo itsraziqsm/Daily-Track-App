@@ -165,6 +165,23 @@ class ScheduleProvider extends ChangeNotifier {
     return true;
   }
 
+  /// Hasil diagnostik notifikasi untuk ditampilkan di Pengaturan.
+  int pendingNotifications = 0;
+  bool exactAlarmsAllowed = true;
+
+  Future<void> refreshNotificationStatus() async {
+    pendingNotifications = await _notifications.pendingCount();
+    exactAlarmsAllowed = await _notifications.canScheduleExact();
+    notificationsAllowed = await _notifications.hasPermission();
+    notifyListeners();
+  }
+
+  Future<bool> sendTestNotification() async {
+    final ok = await _notifications.sendTest();
+    await refreshNotificationStatus();
+    return ok;
+  }
+
   Future<void> _syncNotifications() async {
     await _notifications.reschedule(
       activities: activities,
@@ -173,6 +190,7 @@ class ScheduleProvider extends ChangeNotifier {
       nightSummary: notificationPrefs['night'] ?? false,
       minutesBefore: reminderMinutesBefore,
     );
+    await refreshNotificationStatus();
   }
 
   // ---- Status kegiatan ----
