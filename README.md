@@ -34,8 +34,9 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas
   ("Lainnya"), tercatat ke riwayat dengan tanggal & jam.
 - **Kalender** — grid bulanan dengan titik status per hari (sempurna / ada terlambat / ada
-  pembatalan) plus log pembatalan yang dikelompokkan per hari: hari ini terbuka, hari sebelumnya
-  terlipat dan bisa dibuka satu per satu.
+  pembatalan) yang diam di tempat, dengan panel log pembatalan yang bisa ditarik naik
+  menutupinya; kalender di belakangnya mengabur seiring panel naik. Lognya dikelompokkan per
+  hari: hari ini terbuka, hari sebelumnya terlipat.
 - **Statistik** — ring disiplin mingguan, grafik batang per hari, peringkat alasan pembatalan
   paling sering, dan catatan otomatis (kegiatan yang paling sering dibatalkan).
 - **Template & Kelola Template** — Pengaturan menampilkan template yang aktif hari ini, dan kartu

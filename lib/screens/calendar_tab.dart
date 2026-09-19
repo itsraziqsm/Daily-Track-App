@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -10,7 +12,12 @@ import '../utils/app_time.dart';
 
 const _dowLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
-/// Tab "Kalender" — grid bulanan disiplin harian + log pembatalan terakhir.
+/// Blur maksimum pada kalender saat panel log ditarik penuh.
+const _maxBlur = 7.0;
+
+/// Tab "Kalender" — grid bulanan yang diam, dengan panel log pembatalan yang
+/// bisa ditarik naik menutupinya. Kalender di belakangnya mengabur seiring
+/// panel naik.
 class CalendarTab extends StatefulWidget {
   const CalendarTab({super.key});
 
@@ -21,109 +28,226 @@ class CalendarTab extends StatefulWidget {
 class _CalendarTabState extends State<CalendarTab> {
   late DateTime _month = DateTime(AppTime.now().year, AppTime.now().month);
 
+  final _calendarKey = GlobalKey();
+  final _blur = ValueNotifier<double>(0);
+
+  /// Tinggi kalender diukur dari widget yang sudah ter-render, bukan ditebak,
+  /// karena jumlah baris grid berbeda tiap bulan dan legenda bisa membungkus.
+  double _calendarHeight = 320;
+
+  @override
+  void dispose() {
+    _blur.dispose();
+    super.dispose();
+  }
+
   void _shiftMonth(int delta) {
     setState(() => _month = DateTime(_month.year, _month.month + delta));
+  }
+
+  void _measureCalendar() {
+    final box = _calendarKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    if ((box.size.height - _calendarHeight).abs() > 0.5) {
+      setState(() => _calendarHeight = box.size.height);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ScheduleProvider>();
-    final byDate = provider.logsByDate;
     final today = AppTime.now();
-    final monthLabel = DateFormat('MMMM yyyy', 'id_ID').format(_month);
-
-    final firstOfMonth = DateTime(_month.year, _month.month, 1);
-    final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
-    final leadingBlank = (firstOfMonth.weekday - DateTime.monday) % 7;
 
     final cancelledByDate = <String, List<DailyLog>>{};
     for (final l in provider.cancelledLogs) {
       cancelledByDate.putIfAbsent(l.date, () => []).add(l);
     }
-    final recentCancelledDates = cancelledByDate.keys.toList()
-      ..sort((a, b) => b.compareTo(a));
-    final recentDays = recentCancelledDates.take(6).toList();
+    final recentDays = (cancelledByDate.keys.toList()..sort((a, b) => b.compareTo(a))).take(6).toList();
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
-      children: [
-        const Text(
-          'RIWAYAT',
-          style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted),
-        ),
-        const SizedBox(height: 5),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureCalendar());
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport = constraints.maxHeight;
+        const maxSize = 0.94;
+        final minSize = ((viewport - _calendarHeight) / viewport).clamp(0.18, maxSize);
+
+        return Stack(
           children: [
-            Text(
-              monthLabel[0].toUpperCase() + monthLabel.substring(1),
-              style: const TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
+            // Lapisan tetap: tidak ikut bergulir, hanya mengabur.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ValueListenableBuilder<double>(
+                valueListenable: _blur,
+                builder: (context, sigma, child) => sigma < 0.1
+                    ? child!
+                    : ImageFiltered(
+                        imageFilter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                        child: child!,
+                      ),
+                child: _calendarBlock(provider, today),
+              ),
             ),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(LucideIcons.chevronLeft, size: 20, color: AppColors.orange),
-                  onPressed: () => _shiftMonth(-1),
-                ),
-                IconButton(
-                  icon: const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.orange),
-                  onPressed: () => _shiftMonth(1),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        GridView.count(
-          crossAxisCount: 7,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
-          children: [
-            for (final d in _dowLabels)
-              Center(
-                child: Text(
-                  d.substring(0, 1),
-                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.inkMuted2),
+            NotificationListener<DraggableScrollableNotification>(
+              onNotification: (n) {
+                final span = maxSize - minSize;
+                final t = span <= 0 ? 0.0 : ((n.extent - minSize) / span).clamp(0.0, 1.0);
+                _blur.value = t * _maxBlur;
+                return false;
+              },
+              child: DraggableScrollableSheet(
+                // Kunci ikut berubah saat tinggi kalender terukur ulang (mis.
+                // bulan dengan jumlah baris berbeda), supaya panel kembali
+                // bersandar tepat di bawah kalender.
+                key: ValueKey(minSize.toStringAsFixed(3)),
+                initialChildSize: minSize,
+                minChildSize: minSize,
+                maxChildSize: maxSize,
+                builder: (context, scrollController) => _logPanel(
+                  scrollController: scrollController,
+                  provider: provider,
+                  today: today,
+                  cancelledByDate: cancelledByDate,
+                  recentDays: recentDays,
                 ),
               ),
-            for (var i = 0; i < leadingBlank; i++) const SizedBox.shrink(),
-            for (var day = 1; day <= daysInMonth; day++) _DayCell(date: DateTime(_month.year, _month.month, day), logs: byDate, today: today),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: const [
-            _LegendDot(color: AppColors.yellow, label: 'Hari sempurna'),
-            _LegendDot(color: AppColors.orange, label: 'Ada terlambat'),
-            _LegendDot(color: Color(0xFFDCD4C6), label: 'Ada pembatalan'),
-          ],
-        ),
-        const SizedBox(height: 26),
-        const Text(
-          'LOG PEMBATALAN TERAKHIR',
-          style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted),
-        ),
-        const SizedBox(height: 14),
-        if (recentDays.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 12),
-            child: Text('Belum ada kegiatan yang dibatalkan.', style: TextStyle(color: AppColors.inkMuted, fontSize: 13)),
-          )
-        else
-          for (final dateKey in recentDays)
-            _HistoryDay(
-              key: ValueKey(dateKey),
-              dateKey: dateKey,
-              logs: cancelledByDate[dateKey]!,
-              provider: provider,
-              initiallyExpanded: dateKey == AppTime.dateKey(today),
             ),
-      ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _calendarBlock(ScheduleProvider provider, DateTime today) {
+    final byDate = provider.logsByDate;
+    final monthLabel = DateFormat('MMMM yyyy', 'id_ID').format(_month);
+    final firstOfMonth = DateTime(_month.year, _month.month, 1);
+    final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
+    final leadingBlank = (firstOfMonth.weekday - DateTime.monday) % 7;
+
+    return Container(
+      key: _calendarKey,
+      padding: const EdgeInsets.fromLTRB(22, 8, 22, 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'RIWAYAT',
+            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted),
+          ),
+          const SizedBox(height: 5),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  monthLabel[0].toUpperCase() + monthLabel.substring(1),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.chevronLeft, size: 20, color: AppColors.orange),
+                onPressed: () => _shiftMonth(-1),
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.orange),
+                onPressed: () => _shiftMonth(1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          GridView.count(
+            crossAxisCount: 7,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            children: [
+              for (final d in _dowLabels)
+                Center(
+                  child: Text(
+                    d.substring(0, 1),
+                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.inkMuted2),
+                  ),
+                ),
+              for (var i = 0; i < leadingBlank; i++) const SizedBox.shrink(),
+              for (var day = 1; day <= daysInMonth; day++)
+                _DayCell(date: DateTime(_month.year, _month.month, day), logs: byDate, today: today),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: const [
+              _LegendDot(color: AppColors.yellow, label: 'Hari sempurna'),
+              _LegendDot(color: AppColors.orange, label: 'Ada terlambat'),
+              _LegendDot(color: Color(0xFFDCD4C6), label: 'Ada pembatalan'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _logPanel({
+    required ScrollController scrollController,
+    required ScheduleProvider provider,
+    required DateTime today,
+    required Map<String, List<DailyLog>> cancelledByDate,
+    required List<String> recentDays,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+        border: const Border(top: BorderSide(color: AppColors.line, width: 1.5)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.ink.withValues(alpha: 0.10),
+            blurRadius: 20,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: ListView(
+        controller: scrollController,
+        padding: const EdgeInsets.fromLTRB(22, 12, 22, 26),
+        children: [
+          Center(
+            child: Container(
+              width: 38,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(color: AppColors.lineSoft, borderRadius: BorderRadius.circular(99)),
+            ),
+          ),
+          const Text(
+            'LOG PEMBATALAN TERAKHIR',
+            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted),
+          ),
+          const SizedBox(height: 14),
+          if (recentDays.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: Text('Belum ada kegiatan yang dibatalkan.', style: TextStyle(color: AppColors.inkMuted, fontSize: 13)),
+            )
+          else
+            for (final dateKey in recentDays)
+              _HistoryDay(
+                key: ValueKey(dateKey),
+                dateKey: dateKey,
+                logs: cancelledByDate[dateKey]!,
+                provider: provider,
+                initiallyExpanded: dateKey == AppTime.dateKey(today),
+              ),
+        ],
+      ),
     );
   }
 }
