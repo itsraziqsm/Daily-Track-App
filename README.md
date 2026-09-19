@@ -26,6 +26,9 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
   terkunci. Ketukan yang terblokir menjelaskan alasannya lewat snackbar.
 - **Batalkan lebih awal** — tahan (long-press) kartu mana pun yang belum terkunci untuk membuka
   sheet alasan, termasuk kegiatan yang belum dimulai.
+- **Animasi centang** — cincin menyapu melingkar, lingkaran terisi, lalu centang digambar
+  (`lib/widgets/animated_check_circle.dart`). Irama dan proporsinya diambil dari aset animasi
+  yang disediakan, tapi digambar sebagai vektor agar transparan, tajam, dan ikut warna palet.
 - **Data lokal** — sqflite dengan skema v3: `daily_logs`, `app_settings`, `templates`,
   `template_activities`, `day_assignments`. Migrasi dari skema lama menjaga log yang sudah ada.
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas

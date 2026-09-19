@@ -6,6 +6,7 @@ import '../models/activity.dart';
 import '../models/daily_log.dart';
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
+import 'animated_check_circle.dart';
 
 /// Satu baris kegiatan dalam timeline vertikal, mengikuti tata letak desain
 /// "Daily Track": kolom jam, garis+titik, dan kartu kegiatan.
@@ -72,15 +73,15 @@ class ActivityTile extends StatelessWidget {
             ? const Color(0xFFFAF8F4)
             : AppColors.card;
 
-    final checkBg = (isDone || isLate) ? accent : Colors.white;
-    final checkInk = (isDone || isLate) ? Colors.white : const Color(0xFFD8CFBE);
-    final IconData? checkIcon = isDone
-        ? LucideIcons.check
-        : isLate
-            ? LucideIcons.clock
-            : isCancelled
-                ? LucideIcons.x
-                : null;
+    // Hanya status terlambat dan dibatalkan yang memakai lingkaran statis;
+    // "selesai" punya urutan animasinya sendiri.
+    final statusBg = isLate ? accent : Colors.white;
+    final statusInk = isLate ? Colors.white : const Color(0xFFD8CFBE);
+    final IconData? statusIcon = isLate
+        ? LucideIcons.clock
+        : isCancelled
+            ? LucideIcons.x
+            : null;
 
     final statusText = isLate
         ? 'Selesai di luar toleransi ${ScheduleProvider.toleranceMinutes} mnt'
@@ -212,36 +213,26 @@ class ActivityTile extends StatelessWidget {
                             HapticFeedback.selectionClick();
                             onCheck();
                           },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 240),
-                            curve: Curves.easeOut,
+                          child: SizedBox(
                             width: 34,
                             height: 34,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: checkBg,
-                              border: Border.all(color: accent, width: 2),
-                            ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 280),
-                              // Muncul dengan sedikit melambung, meniru keyframe
-                              // "dtpop" di desain.
-                              switchInCurve: Curves.easeOutBack,
-                              switchOutCurve: Curves.easeIn,
-                              transitionBuilder: (child, animation) => ScaleTransition(
-                                scale: animation,
-                                child: FadeTransition(opacity: animation, child: child),
-                              ),
-                              child: checkIcon == null
-                                  ? const SizedBox.shrink(key: ValueKey('kosong'))
-                                  : Icon(
-                                      checkIcon,
-                                      key: ValueKey(checkIcon.codePoint),
-                                      size: 16,
-                                      color: checkInk,
-                                    ),
-                            ),
+                            // Jalur "belum ditandai ↔ selesai" memakai widget
+                            // yang sama supaya urutan animasinya ikut berjalan
+                            // saat statusnya berubah.
+                            child: isLate || isCancelled
+                                ? _StatusCircle(
+                                    icon: statusIcon,
+                                    background: statusBg,
+                                    border: accent,
+                                    iconColor: statusInk,
+                                  )
+                                : AnimatedCheckCircle(
+                                    checked: isDone,
+                                    accent: AppColors.yellow,
+                                    idleBorder: AppColors.cancelledDot,
+                                    background: Colors.white,
+                                    checkColor: Colors.white,
+                                  ),
                           ),
                         ),
                       ],
@@ -346,5 +337,47 @@ class ActivityTile extends StatelessWidget {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+/// Lingkaran status untuk terlambat dan dibatalkan — tanpa urutan animasi,
+/// hanya ikonnya yang muncul dengan sedikit melambung.
+class _StatusCircle extends StatelessWidget {
+  final IconData? icon;
+  final Color background;
+  final Color border;
+  final Color iconColor;
+
+  const _StatusCircle({
+    required this.icon,
+    required this.background,
+    required this.border,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOut,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: background,
+        border: Border.all(color: border, width: 2),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 280),
+        switchInCurve: Curves.easeOutBack,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, animation) => ScaleTransition(
+          scale: animation,
+          child: FadeTransition(opacity: animation, child: child),
+        ),
+        child: icon == null
+            ? const SizedBox.shrink(key: ValueKey('kosong'))
+            : Icon(icon, key: ValueKey(icon!.codePoint), size: 16, color: iconColor),
+      ),
+    );
   }
 }
