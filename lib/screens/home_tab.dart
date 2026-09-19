@@ -133,38 +133,43 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
     final t = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
     final expanded = 1 - t;
 
-    return ClipRect(
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.bg,
-          boxShadow: t > 0.02
-              ? [
-                  BoxShadow(
-                    color: AppColors.ink.withValues(alpha: 0.07 * t),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+    // Harus mengisi persis tinggi yang diberikan sliver. Kalau isinya menghitung
+    // tingginya sendiri, selisih pembulatan sekecil apa pun membuat paintExtent
+    // dan layoutExtent tidak sama, dan Flutter menolak geometrinya.
+    return SizedBox.expand(
+      child: ClipRect(
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.bg,
+            boxShadow: t > 0.02
+                ? [
+                    BoxShadow(
+                      color: AppColors.ink.withValues(alpha: 0.07 * t),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(22, _padTop, 22, _padBottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRect(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  heightFactor: expanded,
+                  child: Opacity(
+                    opacity: expanded,
+                    child: SizedBox(height: _titleBlock, child: _titleRow()),
                   ),
-                ]
-              : null,
-        ),
-        padding: const EdgeInsets.fromLTRB(22, _padTop, 22, _padBottom),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRect(
-              child: Align(
-                alignment: Alignment.topCenter,
-                heightFactor: expanded,
-                child: Opacity(
-                  opacity: expanded,
-                  child: SizedBox(height: _titleBlock, child: _titleRow()),
                 ),
               ),
-            ),
-            SizedBox(height: _gap * expanded),
-            _progressCard(t),
-          ],
+              SizedBox(height: _gap * expanded),
+              _progressCard(t),
+            ],
+          ),
         ),
       ),
     );
