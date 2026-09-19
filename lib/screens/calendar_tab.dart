@@ -115,7 +115,14 @@ class _CalendarTabState extends State<CalendarTab> {
             child: Text('Belum ada kegiatan yang dibatalkan.', style: TextStyle(color: AppColors.inkMuted, fontSize: 13)),
           )
         else
-          for (final dateKey in recentDays) _HistoryDay(dateKey: dateKey, logs: cancelledByDate[dateKey]!, provider: provider),
+          for (final dateKey in recentDays)
+            _HistoryDay(
+              key: ValueKey(dateKey),
+              dateKey: dateKey,
+              logs: cancelledByDate[dateKey]!,
+              provider: provider,
+              initiallyExpanded: dateKey == AppTime.dateKey(today),
+            ),
       ],
     );
   }
@@ -184,88 +191,140 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
-class _HistoryDay extends StatelessWidget {
+/// Satu hari dalam log pembatalan. Hari ini terbuka, hari sebelumnya terlipat
+/// supaya daftarnya tidak memanjang.
+class _HistoryDay extends StatefulWidget {
   final String dateKey;
   final List<DailyLog> logs;
   final ScheduleProvider provider;
+  final bool initiallyExpanded;
 
-  const _HistoryDay({required this.dateKey, required this.logs, required this.provider});
+  const _HistoryDay({
+    super.key,
+    required this.dateKey,
+    required this.logs,
+    required this.provider,
+    required this.initiallyExpanded,
+  });
+
+  @override
+  State<_HistoryDay> createState() => _HistoryDayState();
+}
+
+class _HistoryDayState extends State<_HistoryDay> {
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
-    final date = DateTime.parse(dateKey);
+    final provider = widget.provider;
+    final date = DateTime.parse(widget.dateKey);
     final dateLabel = DateFormat('d MMMM', 'id_ID').format(date);
     final dowLabel = DateFormat('EEEE', 'id_ID').format(date);
-    final sorted = [...logs]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final sorted = [...widget.logs]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.only(bottom: 9),
-            decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.line))),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(dateLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
-                const SizedBox(width: 8),
-                Text(dowLabel, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
-                const Spacer(),
-                Text('${sorted.length} dibatalkan', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted2)),
-              ],
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.only(bottom: 9),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppColors.line)),
+              ),
+              child: Row(
+                children: [
+                  Text(dateLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                  const SizedBox(width: 8),
+                  Text(dowLabel, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                  const Spacer(),
+                  Text('${sorted.length} dibatalkan', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted2)),
+                  const SizedBox(width: 6),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(LucideIcons.chevronDown, size: 16, color: AppColors.inkMuted2),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 9),
-          for (final l in sorted)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 7),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: _expanded
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 9),
+                      for (final l in sorted)
+                        _CancelledRow(log: l, provider: provider),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CancelledRow extends StatelessWidget {
+  final DailyLog log;
+  final ScheduleProvider provider;
+
+  const _CancelledRow({required this.log, required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final activity = provider.activityById(log.activityId);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.rowBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFF4F0E8)),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 44,
+              child: Text(
+                activity?.startTime ?? '-',
+                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.inkMuted),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                activity?.title ?? '-',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.ink),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Nama kegiatan yang diutamakan; alasan panjang dipangkas agar
+            // barisnya tidak meluber.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 108),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                decoration: BoxDecoration(
-                  color: AppColors.rowBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFF4F0E8)),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 44,
-                      child: Text(
-                        provider.activityById(l.activityId)?.startTime ?? '-',
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.inkMuted),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        provider.activityById(l.activityId)?.title ?? '-',
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.ink),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Nama kegiatan yang diutamakan; alasan panjang dipangkas
-                    // agar barisnya tidak meluber.
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 108),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                        decoration: BoxDecoration(color: AppColors.orangeChipBg, borderRadius: BorderRadius.circular(9)),
-                        child: Text(
-                          l.reason ?? '-',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.orangeChipInk),
-                        ),
-                      ),
-                    ),
-                  ],
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(color: AppColors.orangeChipBg, borderRadius: BorderRadius.circular(9)),
+                child: Text(
+                  log.reason ?? '-',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.orangeChipInk),
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -6,9 +6,9 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 
 ## Fitur
 
-- **Hari Ini** — timeline vertikal dari template yang berlaku untuk hari itu, dengan chip hari
-  beruntun dan kartu progres (selesai / terlambat / dibatalkan). Header dan kartu progres diam;
-  hanya daftar kegiatan yang bergulir.
+- **Hari Ini** — timeline vertikal dari template yang berlaku untuk hari itu. Headernya menempel
+  (`SliverPersistentHeader`): saat daftar digulung, tanggal dan chip hari beruntun melipat hingga
+  tersisa kartu progresnya saja, dan kegiatan lewat di belakangnya dengan bayangan tipis.
 - **Navigasi** — empat tab ikon di bawah, bisa diketuk atau digeser kanan-kiri.
 - **Tampilan default polos** — kartu kegiatan tampil apa adanya. Tombol **Batalkan** dan **Tandai
   selesai** hanya muncul pada kegiatan yang jamnya sedang berjalan (di dalam rentang
@@ -34,7 +34,8 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas
   ("Lainnya"), tercatat ke riwayat dengan tanggal & jam.
 - **Kalender** — grid bulanan dengan titik status per hari (sempurna / ada terlambat / ada
-  pembatalan) plus log pembatalan terakhir per hari.
+  pembatalan) plus log pembatalan yang dikelompokkan per hari: hari ini terbuka, hari sebelumnya
+  terlipat dan bisa dibuka satu per satu.
 - **Statistik** — ring disiplin mingguan, grafik batang per hari, peringkat alasan pembatalan
   paling sering, dan catatan otomatis (kegiatan yang paling sering dibatalkan).
 - **Template & Kelola Template** — Pengaturan menampilkan template yang aktif hari ini, dan kartu
