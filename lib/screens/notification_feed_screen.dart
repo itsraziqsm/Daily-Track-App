@@ -14,19 +14,20 @@ class NotificationFeedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final provider = context.watch<ScheduleProvider>();
     final items = provider.allLogs.take(20).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: c.bg,
       appBar: AppBar(
-        title: const Text('Notifikasi', style: TextStyle(fontFamily: AppFonts.title, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.ink)),
+        title: Text('Notifikasi', style: TextStyle(fontFamily: AppFonts.title, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: c.ink)),
         actions: [
-          IconButton(icon: const Icon(LucideIcons.x, size: 21, color: AppColors.ink), onPressed: () => Navigator.of(context).pop()),
+          IconButton(icon: Icon(LucideIcons.x, size: 21, color: c.ink), onPressed: () => Navigator.of(context).pop()),
         ],
       ),
       body: items.isEmpty
-          ? const Center(child: Text('Belum ada aktivitas.', style: TextStyle(color: AppColors.inkMuted)))
+          ? Center(child: Text('Belum ada aktivitas.', style: TextStyle(color: c.inkMuted)))
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(22, 6, 22, 26),
               itemCount: items.length,
@@ -44,6 +45,7 @@ class _NotifCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final activity = provider.activityById(log.activityId);
     final title = switch (log.status) {
       LogStatus.done => '${activity?.title ?? 'Kegiatan'} selesai tepat waktu',
@@ -56,12 +58,12 @@ class _NotifCard extends StatelessWidget {
       LogStatus.cancelled => 'Alasan: ${log.reason ?? '-'}.',
     };
     final dot = switch (log.status) {
-      LogStatus.done => AppColors.yellow,
-      LogStatus.late => AppColors.orange,
-      LogStatus.cancelled => const Color(0xFFDCD4C6),
+      LogStatus.done => c.yellow,
+      LogStatus.late => c.orange,
+      LogStatus.cancelled => c.cancelledDot2,
     };
-    final border = log.status == LogStatus.late ? AppColors.yellowBorder2 : AppColors.line;
-    final bg = log.status == LogStatus.late ? const Color(0xFFFFFCF3) : Colors.white;
+    final border = log.status == LogStatus.late ? c.yellowBorder2 : c.line;
+    final bg = log.status == LogStatus.late ? c.cardWarm : c.card;
     final atLabel = DateFormat('d MMM · HH:mm', 'id_ID').format(log.timestamp);
 
     return Container(
@@ -87,12 +89,12 @@ class _NotifCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Expanded(child: Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.ink))),
-                    Text(atLabel, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted2)),
+                    Expanded(child: Text(title, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: c.ink))),
+                    Text(atLabel, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: c.inkMuted2)),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(body, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted3, height: 1.45)),
+                Text(body, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: c.inkMuted3, height: 1.45)),
               ],
             ),
           ),

@@ -14,6 +14,7 @@ class HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final provider = context.watch<ScheduleProvider>();
     final activities = provider.activities;
     final allSet = activities.isNotEmpty && activities.every((a) => provider.todayLogs.containsKey(a.id));
@@ -23,6 +24,7 @@ class HomeTab extends StatelessWidget {
         SliverPersistentHeader(
           pinned: true,
           delegate: _HeaderDelegate(
+            colors: c,
             todayLabel: DateFormat('EEEE, d MMMM', 'id_ID').format(AppTime.now()),
             streak: provider.perfectStreak,
             doneCount: provider.doneCount,
@@ -43,7 +45,7 @@ class HomeTab extends StatelessWidget {
                         ? 'Belum ada template. Buat satu di Pengaturan → Kelola Template.'
                         : 'Template hari ini belum berisi kegiatan.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.inkMuted),
                   ),
                 ),
               for (var i = 0; i < activities.length; i++)
@@ -71,12 +73,12 @@ class HomeTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(17),
-                    border: Border.all(color: AppColors.lineSoft, width: 1.5),
+                    border: Border.all(color: c.lineSoft, width: 1.5),
                   ),
                   child: Text(
                     'Selesai. Besok mulai ${activities.first.startTime}.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.inkMuted2),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.inkMuted2),
                   ),
                 ),
             ]),
@@ -91,6 +93,7 @@ class HomeTab extends StatelessWidget {
 /// beruntun melipat hingga tersisa progresnya saja; latarnya masif dan
 /// berbayang supaya kegiatan yang tergulung lewat di belakangnya.
 class _HeaderDelegate extends SliverPersistentHeaderDelegate {
+  final AppColors colors;
   final String todayLabel;
   final int streak;
   final int doneCount;
@@ -99,6 +102,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
   final double latePct;
 
   _HeaderDelegate({
+    required this.colors,
     required this.todayLabel,
     required this.streak,
     required this.doneCount,
@@ -130,6 +134,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final c = colors;
     final t = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
     final expanded = 1 - t;
 
@@ -140,11 +145,11 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
       child: ClipRect(
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.bg,
+            color: c.bg,
             boxShadow: t > 0.02
                 ? [
                     BoxShadow(
-                      color: AppColors.ink.withValues(alpha: 0.07 * t),
+                      color: c.shadow.withValues(alpha: (c.isDark ? 0.35 : 0.07) * t),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -162,12 +167,12 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                   heightFactor: expanded,
                   child: Opacity(
                     opacity: expanded,
-                    child: SizedBox(height: _titleBlock, child: _titleRow()),
+                    child: SizedBox(height: _titleBlock, child: _titleRow(c)),
                   ),
                 ),
               ),
               SizedBox(height: _gap * expanded),
-              _progressCard(t),
+              _progressCard(c, t),
             ],
           ),
         ),
@@ -175,7 +180,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _titleRow() {
+  Widget _titleRow(AppColors c) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -187,22 +192,22 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                 height: 15,
                 child: Text(
                   todayLabel[0].toUpperCase() + todayLabel.substring(1),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: AppFonts.subtitle,
                     fontSize: 11,
                     height: 1.2,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.4,
-                    color: AppColors.inkMuted,
+                    color: c.inkMuted,
                   ),
                 ),
               ),
               const SizedBox(height: 5),
-              const SizedBox(
+              SizedBox(
                 height: 36,
                 child: Text(
                   'Hari Ini',
-                  style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, height: 1.2, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
+                  style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, height: 1.2, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: c.ink),
                 ),
               ),
             ],
@@ -212,8 +217,8 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
         Container(
           padding: const EdgeInsets.fromLTRB(9, 7, 11, 7),
           decoration: BoxDecoration(
-            color: AppColors.yellowChipBg,
-            border: Border.all(color: AppColors.yellowChipBorder),
+            color: c.yellowChipBg,
+            border: Border.all(color: c.yellowChipBorder),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -223,16 +228,16 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                 width: 22,
                 height: 22,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.yellow),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: c.yellow),
                 child: Text(
                   '$streak',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.yellowInk),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: c.onYellow),
                 ),
               ),
               const SizedBox(width: 6),
-              const Text(
+              Text(
                 'hari\nberuntun',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.yellowInk2, height: 1.1),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.yellowInk2, height: 1.1),
               ),
             ],
           ),
@@ -241,7 +246,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _progressCard(double t) {
+  Widget _progressCard(AppColors c, double t) {
     final expanded = 1 - t;
     return Container(
       padding: EdgeInsets.symmetric(
@@ -249,8 +254,8 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
         vertical: _cardPadMax - (_cardPadMax - _cardPadMin) * t,
       ),
       decoration: BoxDecoration(
-        color: AppColors.yellowBg,
-        border: Border.all(color: AppColors.yellowBorder, width: 1.5),
+        color: c.yellowBg,
+        border: Border.all(color: c.yellowBorder, width: 1.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -266,9 +271,9 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
               children: [
                 Opacity(
                   opacity: expanded,
-                  child: const Text(
+                  child: Text(
                     'PROGRES HARI INI',
-                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, height: 1.2, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: AppColors.yellowInk3),
+                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, height: 1.2, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: c.yellowInk3),
                   ),
                 ),
                 TweenAnimationBuilder<double>(
@@ -277,7 +282,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                   curve: Curves.easeOutCubic,
                   builder: (context, value, _) => Text(
                     '${value.round()}/$totalCount selesai',
-                    style: const TextStyle(fontSize: 12, height: 1.2, fontWeight: FontWeight.w700, color: AppColors.ink),
+                    style: TextStyle(fontSize: 12, height: 1.2, fontWeight: FontWeight.w700, color: c.ink),
                   ),
                 ),
               ],
@@ -291,21 +296,21 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
               heightFactor: expanded,
               child: Opacity(
                 opacity: expanded,
-                child: const SizedBox(
+                child: SizedBox(
                   height: _cardTail,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       SizedBox(
                         height: 14,
                         child: Row(
                           children: [
-                            _Legend(color: AppColors.yellow, label: 'Selesai'),
-                            SizedBox(width: 14),
-                            _Legend(color: AppColors.orange, label: 'Terlambat'),
-                            SizedBox(width: 14),
-                            _Legend(color: Color(0xFFE4DDD1), label: 'Dibatalkan'),
+                            _Legend(color: c.yellow, label: 'Selesai'),
+                            const SizedBox(width: 14),
+                            _Legend(color: c.orange, label: 'Terlambat'),
+                            const SizedBox(width: 14),
+                            _Legend(color: c.cancelledDot, label: 'Dibatalkan'),
                           ],
                         ),
                       ),
@@ -322,6 +327,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _HeaderDelegate oldDelegate) =>
+      oldDelegate.colors != colors ||
       oldDelegate.todayLabel != todayLabel ||
       oldDelegate.streak != streak ||
       oldDelegate.doneCount != doneCount ||
@@ -340,15 +346,16 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(99),
       child: SizedBox(
         height: 9,
         child: Stack(
           children: [
-            Positioned.fill(child: Container(color: const Color(0xFFF3E6C8))),
-            _ProgressSegment(fraction: donePct + latePct, color: AppColors.orange),
-            _ProgressSegment(fraction: donePct, color: AppColors.yellow),
+            Positioned.fill(child: Container(color: c.track)),
+            _ProgressSegment(fraction: donePct + latePct, color: c.orange),
+            _ProgressSegment(fraction: donePct, color: c.yellow),
           ],
         ),
       ),
@@ -392,12 +399,13 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(width: 7, height: 7, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(fontSize: 10.5, height: 1.2, fontWeight: FontWeight.w600, color: AppColors.yellowInk3)),
+        Text(label, style: TextStyle(fontSize: 10.5, height: 1.2, fontWeight: FontWeight.w600, color: c.yellowInk3)),
       ],
     );
   }

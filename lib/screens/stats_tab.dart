@@ -15,6 +15,7 @@ class StatsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final provider = context.watch<ScheduleProvider>();
     final week = provider.last7DaysCompletion;
     final weekPct = provider.weekDisciplinePct;
@@ -28,19 +29,19 @@ class StatsTab extends StatelessWidget {
       children: [
         Text(
           rangeLabel,
-          style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted),
+          style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: c.inkMuted),
         ),
         const SizedBox(height: 5),
-        const Text(
+        Text(
           'Statistik',
-          style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
+          style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: c.ink),
         ),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
           decoration: BoxDecoration(
-            color: AppColors.yellowBg,
-            border: Border.all(color: AppColors.yellowBorder),
+            color: c.yellowBg,
+            border: Border.all(color: c.yellowBorder),
             borderRadius: BorderRadius.circular(22),
           ),
           child: Row(
@@ -53,23 +54,23 @@ class StatsTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('HARI SEMPURNA', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.yellowInk3)),
+                    Text('HARI SEMPURNA', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: c.yellowInk3)),
                     const SizedBox(height: 3),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
                       children: [
-                        Text('${provider.perfectStreak}', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.ink)),
+                        Text('${provider.perfectStreak}', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: c.ink)),
                         const SizedBox(width: 6),
-                        const Text('beruntun', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                        Text('beruntun', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted)),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Text('MINGGU INI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.yellowInk3)),
+                    Text('MINGGU INI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: c.yellowInk3)),
                     const SizedBox(height: 3),
                     Text(
                       '${(weekPct * 100).round()}% rata-rata selesai',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.ink),
                     ),
                   ],
                 ),
@@ -80,9 +81,9 @@ class StatsTab extends StatelessWidget {
         const SizedBox(height: 22),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Text('PER HARI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
-            Text('% kegiatan selesai', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted2)),
+          children: [
+            Text('PER HARI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+            Text('% kegiatan selesai', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w600, color: c.inkMuted2)),
           ],
         ),
         const SizedBox(height: 14),
@@ -102,12 +103,12 @@ class StatsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 26),
-        const Text('ALASAN PALING SERING', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+        Text('ALASAN PALING SERING', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
         const SizedBox(height: 12),
         if (ranking.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
-            child: Text('Belum ada data pembatalan.', style: TextStyle(color: AppColors.inkMuted, fontSize: 13)),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text('Belum ada data pembatalan.', style: TextStyle(color: c.inkMuted, fontSize: 13)),
           )
         else
           for (final r in ranking) _ReasonBar(label: r.key, count: r.value, maxCount: topRankCount),
@@ -116,18 +117,18 @@ class StatsTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 15),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFFCF3),
-              border: Border.all(color: AppColors.yellowBorder2, width: 1.5),
+              color: c.cardWarm,
+              border: Border.all(color: c.yellowBorder2, width: 1.5),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('CATATAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.7, color: AppColors.yellowInk2)),
+                Text('CATATAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.7, color: c.yellowInk2)),
                 const SizedBox(height: 6),
                 Text(
                   '"${provider.mostCancelledActivityTitle}" paling sering dibatalkan, biasanya dengan alasan "${provider.mostCommonReason}". Coba lihat kembali jadwalnya.',
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.yellowInk, height: 1.5),
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: c.yellowInk, height: 1.5),
                 ),
               ],
             ),
@@ -151,11 +152,12 @@ class _DayBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = pct >= 0.95 ? AppColors.yellow : (pct >= 0.7 ? AppColors.yellowBorder2 : AppColors.orange);
+    final c = AppColors.of(context);
+    final color = pct >= 0.95 ? c.yellow : (pct >= 0.7 ? c.yellowBorder2 : c.orange);
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text('${(pct * 100).round()}%', style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted2)),
+        Text('${(pct * 100).round()}%', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: c.inkMuted2)),
         const SizedBox(height: 7),
         Expanded(
           child: Align(
@@ -172,7 +174,7 @@ class _DayBar extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 7),
-        Text(dayLabel, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: isToday ? AppColors.ink : AppColors.inkMuted2)),
+        Text(dayLabel, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: isToday ? c.ink : c.inkMuted2)),
       ],
     );
   }
@@ -186,8 +188,9 @@ class _ReasonBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final w = maxCount == 0 ? 0.0 : count / maxCount;
-    final fill = count >= maxCount ? AppColors.orange : AppColors.yellow;
+    final fill = count >= maxCount ? c.orange : c.yellow;
     return Padding(
       padding: const EdgeInsets.only(bottom: 13),
       child: Column(
@@ -203,10 +206,10 @@ class _ReasonBar extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.ink),
                 ),
               ),
-              Text('${count}×', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted)),
+              Text('${count}×', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: c.inkMuted)),
             ],
           ),
           const SizedBox(height: 6),
@@ -216,7 +219,7 @@ class _ReasonBar extends StatelessWidget {
               height: 8,
               child: Stack(
                 children: [
-                  Container(color: const Color(0xFFF4F0E8)),
+                  Container(color: c.lineSoft2),
                   FractionallySizedBox(widthFactor: w.clamp(0.02, 1.0), child: Container(color: fill)),
                 ],
               ),

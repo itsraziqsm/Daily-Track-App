@@ -1,4 +1,4 @@
-# Jadwal Harian (Daily Track)
+# GroU
 
 Aplikasi Flutter personal untuk melacak kedisiplinan menjalankan jadwal harian (format 24 jam).
 Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi template bawaan
@@ -16,6 +16,12 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Tandai selesai** — status ditentukan otomatis: *selesai tepat waktu*, atau *terlambat* bila
   ditandai lebih dari 35 menit (`ScheduleProvider.toleranceMinutes`) setelah rentang waktunya
   **usai**.
+- **Mode terang & gelap** — Pengaturan → Tampilan → Tema: *Ikuti sistem*, *Terang*, atau
+  *Gelap*, tersimpan di database dan dibaca sebelum frame pertama supaya tidak berkedip. Palet
+  (`AppColors` di `lib/theme/app_theme.dart`) adalah `ThemeExtension` dengan varian `light`
+  (persis desain) dan `dark` (cokelat hangat gelap, aksen kuning/oranye tetap); widget
+  mengambilnya lewat `AppColors.of(context)`, jadi tidak ada warna hex yang ditulis langsung di
+  layar.
 - **Zona waktu bisa dipilih** — WIB / WITA / WIT, diatur lewat Pengaturan → Zona waktu dan
   tersimpan di database. Seluruh perhitungan (jendela aktif, keterlambatan, tanggal log, streak,
   statistik) memakai zona itu lewat `lib/utils/app_time.dart`, bukan zona waktu perangkat.
@@ -72,8 +78,8 @@ lib/
     stats_tab.dart                # Statistik
     settings_tab.dart            # Pengaturan
     notification_feed_screen.dart
-  widgets/                       # ActivityTile, dialog alasan batal, ring chart
-  theme/app_theme.dart           # palet & tema persis dari desain
+  widgets/                       # ActivityTile, sheet alasan batal / zona waktu / tema, ring chart
+  theme/app_theme.dart           # palet terang & gelap (ThemeExtension) dan ThemeData
   services/notification_service.dart  # notifikasi lokal terjadwal
   utils/app_time.dart            # zona waktu aktif (WIB/WITA/WIT) & helper waktu
 ```
@@ -89,5 +95,18 @@ flutter create .        # membangkitkan folder android/ dan ios/ di sekitar lib/
 flutter pub get
 flutter run
 ```
+
+Nama yang tampil di launcher diatur di proyek native; lihat bagian "Nama aplikasi" di
+`ANDROID_SETUP.md`, termasuk cara memberi nama file APK `GroU.apk`.
+
+### Test
+
+```bash
+flutter test                                                   # semua layar, terang & gelap
+flutter test --update-goldens --dart-define=SCREENSHOTS=true   # + tangkapan layar ke test/screenshots/
+```
+
+`test/theme_screens_test.dart` menggambar tiap layar dan sheet dengan data nyata (sqflite lewat
+FFI) di kedua mode dan gagal bila ada overflow atau exception layout.
 
 Locale tanggal Indonesia (`id_ID`) diinisialisasi otomatis saat aplikasi start.

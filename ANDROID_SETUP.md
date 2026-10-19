@@ -71,7 +71,40 @@ dependencies {
 
 Pastikan `minSdk` minimal 21.
 
-## 3. Setelah itu
+## 3. Nama aplikasi "GroU"
+
+Nama paket Dart sudah `grou`, jadi `flutter create .` pada folder kosong membuat
+`applicationId` `com.example.grou`. Ganti `--org` kalau mau ID sendiri:
+
+```bash
+flutter create --org com.namakamu --platforms=android,ios .
+```
+
+Nama di bawah ikon launcher diatur terpisah. Di
+`android/app/src/main/AndroidManifest.xml`, ubah atribut `android:label` pada
+`<application>`:
+
+```xml
+<application
+    android:label="GroU"
+    ...>
+```
+
+(iOS: `CFBundleDisplayName` di `ios/Runner/Info.plist` → `GroU`.)
+
+Kalau folder `android/` sudah pernah dibangkitkan dengan nama lama, cukup ganti
+label di atas — `applicationId` lama boleh dibiarkan supaya aplikasi yang sudah
+terpasang (beserta datanya) diperbarui, bukan dipasang sebagai aplikasi baru.
+
+File APK hasil build Flutter selalu bernama `app-release.apk`. Untuk installer
+bernama GroU, salin setelah build:
+
+```bash
+flutter build apk --release
+cp build/app/outputs/flutter-apk/app-release.apk GroU.apk
+```
+
+## 4. Setelah itu
 
 ```bash
 flutter clean

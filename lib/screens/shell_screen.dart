@@ -54,8 +54,9 @@ class _ShellScreenState extends State<ShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: c.bg,
       appBar: AppBar(
         toolbarHeight: 48,
         actions: [
@@ -72,14 +73,14 @@ class _ShellScreenState extends State<ShellScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    const Icon(LucideIcons.bell, size: 21, color: AppColors.ink),
+                    Icon(LucideIcons.bell, size: 21, color: c.ink),
                     Positioned(
                       top: 7,
                       right: 7,
                       child: Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.orange),
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: c.orange),
                       ),
                     ),
                   ],
@@ -101,9 +102,9 @@ class _ShellScreenState extends State<ShellScreen> {
       ),
       bottomNavigationBar: Container(
         height: 64,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppColors.line)),
+        decoration: BoxDecoration(
+          color: c.card,
+          border: Border(top: BorderSide(color: c.line)),
         ),
         child: SafeArea(
           top: false,
@@ -124,7 +125,7 @@ class _ShellScreenState extends State<ShellScreen> {
                           child: Icon(
                             _tabIcons[i].icon,
                             size: 24,
-                            color: _tab == i ? AppColors.orange : const Color(0xFF9C927F),
+                            color: _tab == i ? c.orange : c.navIdle,
                           ),
                         ),
                       ),

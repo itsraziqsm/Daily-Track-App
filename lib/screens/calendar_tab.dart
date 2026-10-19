@@ -126,6 +126,7 @@ class _CalendarTabState extends State<CalendarTab> {
     final firstOfMonth = DateTime(_month.year, _month.month, 1);
     final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
     final leadingBlank = (firstOfMonth.weekday - DateTime.monday) % 7;
+    final c = AppColors.of(context);
 
     return Container(
       key: _calendarKey,
@@ -134,9 +135,9 @@ class _CalendarTabState extends State<CalendarTab> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'RIWAYAT',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.inkMuted),
+            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: c.inkMuted),
           ),
           const SizedBox(height: 5),
           Row(
@@ -147,15 +148,15 @@ class _CalendarTabState extends State<CalendarTab> {
                 child: Text(
                   monthLabel[0].toUpperCase() + monthLabel.substring(1),
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: AppColors.ink),
+                  style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: c.ink),
                 ),
               ),
               IconButton(
-                icon: const Icon(LucideIcons.chevronLeft, size: 20, color: AppColors.orange),
+                icon: Icon(LucideIcons.chevronLeft, size: 20, color: c.orange),
                 onPressed: () => _shiftMonth(-1),
               ),
               IconButton(
-                icon: const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.orange),
+                icon: Icon(LucideIcons.chevronRight, size: 20, color: c.orange),
                 onPressed: () => _shiftMonth(1),
               ),
             ],
@@ -172,7 +173,7 @@ class _CalendarTabState extends State<CalendarTab> {
                 Center(
                   child: Text(
                     d.substring(0, 1),
-                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: AppColors.inkMuted2),
+                    style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: c.inkMuted2),
                   ),
                 ),
               for (var i = 0; i < leadingBlank; i++) const SizedBox.shrink(),
@@ -184,10 +185,10 @@ class _CalendarTabState extends State<CalendarTab> {
           Wrap(
             spacing: 12,
             runSpacing: 8,
-            children: const [
-              _LegendDot(color: AppColors.yellow, label: 'Hari sempurna'),
-              _LegendDot(color: AppColors.orange, label: 'Ada terlambat'),
-              _LegendDot(color: Color(0xFFDCD4C6), label: 'Ada pembatalan'),
+            children: [
+              _LegendDot(color: c.yellow, label: 'Hari sempurna'),
+              _LegendDot(color: c.orange, label: 'Ada terlambat'),
+              _LegendDot(color: c.cancelledDot2, label: 'Ada pembatalan'),
             ],
           ),
         ],
@@ -202,14 +203,15 @@ class _CalendarTabState extends State<CalendarTab> {
     required Map<String, List<DailyLog>> cancelledByDate,
     required List<String> recentDays,
   }) {
+    final c = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.bg,
+        color: c.bg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-        border: const Border(top: BorderSide(color: AppColors.line, width: 1.5)),
+        border: Border(top: BorderSide(color: c.line, width: 1.5)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.10),
+            color: c.shadow.withValues(alpha: c.isDark ? 0.4 : 0.10),
             blurRadius: 20,
             offset: const Offset(0, -6),
           ),
@@ -224,18 +226,18 @@ class _CalendarTabState extends State<CalendarTab> {
               width: 38,
               height: 4,
               margin: const EdgeInsets.only(bottom: 14),
-              decoration: BoxDecoration(color: AppColors.lineSoft, borderRadius: BorderRadius.circular(99)),
+              decoration: BoxDecoration(color: c.lineSoft, borderRadius: BorderRadius.circular(99)),
             ),
           ),
-          const Text(
+          Text(
             'LOG PEMBATALAN TERAKHIR',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted),
+            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted),
           ),
           const SizedBox(height: 14),
           if (recentDays.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 12),
-              child: Text('Belum ada kegiatan yang dibatalkan.', style: TextStyle(color: AppColors.inkMuted, fontSize: 13)),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text('Belum ada kegiatan yang dibatalkan.', style: TextStyle(color: c.inkMuted, fontSize: 13)),
             )
           else
             for (final dateKey in recentDays)
@@ -261,6 +263,7 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final key = AppTime.dateKey(date);
     final dayLogs = logs[key];
     final isToday = key == AppTime.dateKey(today);
@@ -269,14 +272,14 @@ class _DayCell extends StatelessWidget {
     if (dayLogs != null && dayLogs.isNotEmpty) {
       final hasLate = dayLogs.any((l) => l.status == LogStatus.late);
       final hasCancelled = dayLogs.any((l) => l.status == LogStatus.cancelled);
-      dot = hasLate ? AppColors.orange : (hasCancelled ? const Color(0xFFDCD4C6) : AppColors.yellow);
+      dot = hasLate ? c.orange : (hasCancelled ? c.cancelledDot2 : c.yellow);
     }
 
     return Container(
       decoration: BoxDecoration(
-        color: isToday ? AppColors.yellowChipBg : (dayLogs != null ? AppColors.rowBg : Colors.white),
+        color: isToday ? c.yellowChipBg : (dayLogs != null ? c.rowBg : c.card),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isToday ? AppColors.yellow : const Color(0xFFF4F0E8), width: 1.5),
+        border: Border.all(color: isToday ? c.yellow : c.lineSoft2, width: 1.5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -286,7 +289,7 @@ class _DayCell extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: dayLogs != null || isToday ? AppColors.ink : const Color(0xFFD0C7B6),
+              color: dayLogs != null || isToday ? c.ink : c.dayMuted,
             ),
           ),
           const SizedBox(height: 3),
@@ -304,12 +307,13 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(width: 7, height: 7, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted3)),
+        Text(label, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: c.inkMuted3)),
       ],
     );
   }
@@ -340,6 +344,7 @@ class _HistoryDayState extends State<_HistoryDay> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final provider = widget.provider;
     final date = DateTime.parse(widget.dateKey);
     final dateLabel = DateFormat('d MMMM', 'id_ID').format(date);
@@ -356,21 +361,21 @@ class _HistoryDayState extends State<_HistoryDay> {
             behavior: HitTestBehavior.opaque,
             child: Container(
               padding: const EdgeInsets.only(bottom: 9),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.line)),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: c.line)),
               ),
               child: Row(
                 children: [
-                  Text(dateLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                  Text(dateLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: c.ink)),
                   const SizedBox(width: 8),
-                  Text(dowLabel, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted)),
+                  Text(dowLabel, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted)),
                   const Spacer(),
-                  Text('${sorted.length} dibatalkan', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted2)),
+                  Text('${sorted.length} dibatalkan', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: c.inkMuted2)),
                   const SizedBox(width: 6),
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
-                    child: const Icon(LucideIcons.chevronDown, size: 16, color: AppColors.inkMuted2),
+                    child: Icon(LucideIcons.chevronDown, size: 16, color: c.inkMuted2),
                   ),
                 ],
               ),
@@ -405,15 +410,16 @@ class _CancelledRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final activity = provider.activityById(log.activityId);
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
         decoration: BoxDecoration(
-          color: AppColors.rowBg,
+          color: c.rowBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFF4F0E8)),
+          border: Border.all(color: c.lineSoft2),
         ),
         child: Row(
           children: [
@@ -421,14 +427,14 @@ class _CancelledRow extends StatelessWidget {
               width: 44,
               child: Text(
                 activity?.startTime ?? '-',
-                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.inkMuted),
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: c.inkMuted),
               ),
             ),
             Expanded(
               child: Text(
                 activity?.title ?? '-',
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.ink),
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: c.ink),
               ),
             ),
             const SizedBox(width: 8),
@@ -438,12 +444,12 @@ class _CancelledRow extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 108),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(color: AppColors.orangeChipBg, borderRadius: BorderRadius.circular(9)),
+                decoration: BoxDecoration(color: c.orangeChipBg, borderRadius: BorderRadius.circular(9)),
                 child: Text(
                   log.reason ?? '-',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.orangeChipInk),
+                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: c.orangeChipInk),
                 ),
               ),
             ),

@@ -11,21 +11,29 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
   await NotificationService.instance.init();
-  runApp(const JadwalHarianApp());
+  final themeMode = await ScheduleProvider.readThemeMode();
+  runApp(GroUApp(themeMode: themeMode));
 }
 
-class JadwalHarianApp extends StatelessWidget {
-  const JadwalHarianApp({super.key});
+class GroUApp extends StatelessWidget {
+  final ThemeMode themeMode;
+  const GroUApp({super.key, this.themeMode = ThemeMode.system});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ScheduleProvider(),
-      child: MaterialApp(
-        title: 'Jadwal Harian',
-        debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        home: const ShellScreen(),
+      create: (_) => ScheduleProvider(themeMode: themeMode),
+      child: Selector<ScheduleProvider, ThemeMode>(
+        selector: (_, provider) => provider.themeMode,
+        builder: (context, mode, home) => MaterialApp(
+          title: 'GroU',
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(AppColors.light),
+          darkTheme: buildAppTheme(AppColors.dark),
+          themeMode: mode,
+          home: home,
+        ),
+        child: const ShellScreen(),
       ),
     );
   }

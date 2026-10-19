@@ -40,43 +40,44 @@ class ActivityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final isDone = log?.status == LogStatus.done;
     final isLate = log?.status == LogStatus.late;
     final isCancelled = log?.status == LogStatus.cancelled;
     final hasStatus = log != null;
 
     final accent = isLate
-        ? AppColors.orange
+        ? c.orange
         : isDone
-            ? AppColors.yellow
-            : AppColors.cancelledDot;
+            ? c.yellow
+            : c.cancelledDot;
     final dotColor = isCancelled
-        ? AppColors.cancelledDot
+        ? c.cancelledDot
         : isLate
-            ? AppColors.orange
+            ? c.orange
             : isDone
-                ? AppColors.yellow
+                ? c.yellow
                 : isRunning
-                    ? AppColors.orange
-                    : AppColors.cancelledDot;
-    final dotHalo = isRunning && !hasStatus ? AppColors.orange.withValues(alpha: 0.16) : Colors.white;
+                    ? c.orange
+                    : c.cancelledDot;
+    final dotHalo = isRunning && !hasStatus ? c.orange.withValues(alpha: 0.16) : c.card;
 
     final showActions = isRunning && !hasStatus;
     final cardBorder = showActions
-        ? AppColors.yellowBorder2
+        ? c.yellowBorder2
         : isCancelled
-            ? AppColors.lineSoft2
-            : AppColors.line;
+            ? c.lineSoft2
+            : c.line;
     final cardBg = showActions
-        ? const Color(0xFFFFFCF3)
+        ? c.cardWarm
         : isCancelled
-            ? const Color(0xFFFAF8F4)
-            : AppColors.card;
+            ? c.cardCancelled
+            : c.card;
 
     // Hanya status terlambat dan dibatalkan yang memakai lingkaran statis;
     // "selesai" punya urutan animasinya sendiri.
-    final statusBg = isLate ? accent : Colors.white;
-    final statusInk = isLate ? Colors.white : const Color(0xFFD8CFBE);
+    final statusBg = isLate ? accent : c.card;
+    final statusInk = isLate ? Colors.white : c.iconFaint;
     final IconData? statusIcon = isLate
         ? LucideIcons.clock
         : isCancelled
@@ -100,7 +101,7 @@ class ActivityTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 46,
+            width: 50,
             child: Padding(
               padding: const EdgeInsets.only(top: 15, right: 10),
               child: Column(
@@ -113,14 +114,14 @@ class ActivityTile extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.2,
-                      color: hasStatus ? AppColors.inkMuted : AppColors.ink,
+                      color: hasStatus ? c.inkMuted : c.ink,
                     ),
                   ),
                   const SizedBox(height: 1),
                   Text(
                     activity.durationLabel,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted2),
+                    style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600, color: c.inkMuted2),
                   ),
                 ],
               ),
@@ -142,7 +143,7 @@ class ActivityTile extends StatelessWidget {
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 2, color: AppColors.line, constraints: const BoxConstraints(minHeight: 12)),
+                  child: Container(width: 2, color: c.line, constraints: const BoxConstraints(minHeight: 12)),
                 ),
             ],
           ),
@@ -186,7 +187,7 @@ class ActivityTile extends StatelessWidget {
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: -0.2,
-                                  color: isCancelled ? AppColors.inkMuted : AppColors.ink,
+                                  color: isCancelled ? c.inkMuted : c.ink,
                                   decoration: isCancelled ? TextDecoration.lineThrough : null,
                                 ),
                               ),
@@ -197,7 +198,7 @@ class ActivityTile extends StatelessWidget {
                                   fontFamily: AppFonts.subtitle,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: isLate ? AppColors.orange : AppColors.inkMuted,
+                                  color: isLate ? c.orange : c.inkMuted,
                                 ),
                               ),
                             ],
@@ -228,9 +229,9 @@ class ActivityTile extends StatelessWidget {
                                   )
                                 : AnimatedCheckCircle(
                                     checked: isDone,
-                                    accent: AppColors.yellow,
-                                    idleBorder: AppColors.cancelledDot,
-                                    background: Colors.white,
+                                    accent: c.yellow,
+                                    idleBorder: c.cancelledDot,
+                                    background: c.card,
                                     checkColor: Colors.white,
                                   ),
                           ),
@@ -238,9 +239,9 @@ class ActivityTile extends StatelessWidget {
                       ],
                     ),
                     if (showActions) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 11),
-                        child: Divider(height: 1, color: AppColors.line),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        child: Divider(height: 1, color: c.line),
                       ),
                       Row(
                         children: [
@@ -251,13 +252,13 @@ class ActivityTile extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(vertical: 8),
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: c.card,
                                   borderRadius: BorderRadius.circular(11),
-                                  border: Border.all(color: AppColors.lineSoft, width: 1.5),
+                                  border: Border.all(color: c.lineSoft, width: 1.5),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Batalkan',
-                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted3),
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: c.inkMuted3),
                                 ),
                               ),
                             ),
@@ -277,13 +278,13 @@ class ActivityTile extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(vertical: 8),
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: AppColors.yellow,
+                                  color: c.yellow,
                                   borderRadius: BorderRadius.circular(11),
-                                  border: Border.all(color: AppColors.yellow, width: 1.5),
+                                  border: Border.all(color: c.yellow, width: 1.5),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Tandai selesai',
-                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF4A3708)),
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: c.onYellow),
                                 ),
                               ),
                             ),
@@ -296,7 +297,7 @@ class ActivityTile extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF7F4EE),
+                          color: c.inset,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -304,13 +305,13 @@ class ActivityTile extends StatelessWidget {
                             Container(
                               width: 5,
                               height: 5,
-                              decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.inkMuted2),
+                              decoration: BoxDecoration(shape: BoxShape.circle, color: c.inkMuted2),
                             ),
                             const SizedBox(width: 7),
                             Expanded(
                               child: Text(
                                 'Alasan: ${log!.reason}',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted3),
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted3),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),

@@ -28,7 +28,7 @@ class NotificationService {
   bool _available = true;
 
   static const _channelId = 'jadwal_harian';
-  static const _channelName = 'Jadwal Harian';
+  static const _channelName = 'GroU';
   static const _channelDescription = 'Pengingat kegiatan dan ringkasan harian';
 
   /// Rentang id agar tiap jenis notifikasi tidak saling menimpa.

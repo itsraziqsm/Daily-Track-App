@@ -20,10 +20,11 @@ class _TimeZoneSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
       // SafeArea menampung bilah navigasi sistem, dan isinya digulung bila
       // layarnya pendek — tanpa ini baris terakhir bisa meluber.
@@ -41,19 +42,19 @@ class _TimeZoneSheet extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.lineSoft,
+                    color: c.lineSoft,
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
               ),
-              const Text(
+              Text(
                 'Zona waktu',
-                style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
+                style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: c.ink, letterSpacing: -0.4),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Menentukan jam berjalan, batas hari, dan hitungan terlambat',
-                style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+                style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: c.inkMuted),
               ),
               const SizedBox(height: 16),
               for (final zone in AppTimeZone.values) ...[
@@ -76,14 +77,15 @@ class _ZoneRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: () => Navigator.of(context).pop(zone),
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.rowBg : AppColors.card,
-          border: Border.all(color: selected ? AppColors.ink : AppColors.line, width: 1.5),
+          color: selected ? c.rowBg : c.card,
+          border: Border.all(color: selected ? c.ink : c.line, width: 1.5),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -94,13 +96,13 @@ class _ZoneRow extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: selected ? AppColors.ink : AppColors.lineSoft, width: 2),
+                border: Border.all(color: selected ? c.ink : c.lineSoft, width: 2),
               ),
               child: selected
                   ? Container(
                       width: 10,
                       height: 10,
-                      decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.ink),
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: c.ink),
                     )
                   : null,
             ),
@@ -111,12 +113,12 @@ class _ZoneRow extends StatelessWidget {
                 children: [
                   Text(
                     '${zone.code} · ${zone.label}',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: c.ink),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     zone.sample,
-                    style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.inkMuted),
                   ),
                 ],
               ),

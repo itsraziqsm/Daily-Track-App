@@ -14,20 +14,21 @@ class ManageTemplatesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final provider = context.watch<ScheduleProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: c.bg,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Kelola Template',
-          style: TextStyle(fontFamily: AppFonts.title, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.4, color: AppColors.ink),
+          style: TextStyle(fontFamily: AppFonts.title, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.4, color: c.ink),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(22, 8, 22, 30),
         children: [
-          const Text('DAFTAR TEMPLATE', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+          Text('DAFTAR TEMPLATE', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
           const SizedBox(height: 11),
           for (final template in provider.templates) ...[
             _TemplateCard(
@@ -49,24 +50,24 @@ class ManageTemplatesScreen extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.lineSoft, width: 1.5, style: BorderStyle.solid),
+                border: Border.all(color: c.lineSoft, width: 1.5, style: BorderStyle.solid),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.plus, size: 17, color: AppColors.inkMuted),
-                  SizedBox(width: 8),
-                  Text('Buat template baru', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted)),
+                  Icon(LucideIcons.plus, size: 17, color: c.inkMuted),
+                  const SizedBox(width: 8),
+                  Text('Buat template baru', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.inkMuted)),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 28),
-          const Text('TEMPLATE PER HARI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+          Text('TEMPLATE PER HARI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Menentukan template mana yang dipakai pada hari apa',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted2),
+            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.inkMuted2),
           ),
           const SizedBox(height: 11),
           for (var weekday = 1; weekday <= 7; weekday++)
@@ -91,63 +92,66 @@ class ManageTemplatesScreen extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(color: AppColors.lineSoft, borderRadius: BorderRadius.circular(99)),
+      builder: (context) {
+        final c = AppColors.of(context);
+        return Container(
+          decoration: BoxDecoration(
+            color: c.card,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(color: c.lineSoft, borderRadius: BorderRadius.circular(99)),
+                    ),
                   ),
-                ),
-                const Text(
-                  'Pilih template',
-                  style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
-                ),
-                const SizedBox(height: 16),
-                for (final t in provider.templates)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 9),
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(t),
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.line, width: 1.5),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(t.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink)),
-                            ),
-                            Text(
-                              '${t.activities.length} kegiatan',
-                              style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
-                            ),
-                          ],
+                  Text(
+                    'Pilih template',
+                    style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: c.ink, letterSpacing: -0.4),
+                  ),
+                  const SizedBox(height: 16),
+                  for (final t in provider.templates)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 9),
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(t),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: c.line, width: 1.5),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(t.name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.ink)),
+                              ),
+                              Text(
+                                '${t.activities.length} kegiatan',
+                                style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.inkMuted),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -161,6 +165,7 @@ class _TemplateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final dayLabel = weekdays.isEmpty
         ? 'Belum dipakai hari apa pun'
         : weekdays.map(weekdayShort).join(' · ');
@@ -171,8 +176,8 @@ class _TemplateCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.line, width: 1.5),
+          color: c.card,
+          border: Border.all(color: c.line, width: 1.5),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -181,21 +186,21 @@ class _TemplateCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(template.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: AppColors.ink)),
+                  Text(template.name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: c.ink)),
                   const SizedBox(height: 3),
                   Text(
                     '${template.activities.length} kegiatan · ${template.rangeLabel}',
-                    style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.inkMuted),
                   ),
                   const SizedBox(height: 5),
                   Text(
                     dayLabel,
-                    style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.orangeChipInk),
+                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, color: c.orangeChipInk),
                   ),
                 ],
               ),
             ),
-            const Icon(LucideIcons.chevronRight, size: 18, color: AppColors.inkMuted2),
+            Icon(LucideIcons.chevronRight, size: 18, color: c.inkMuted2),
           ],
         ),
       ),
@@ -212,32 +217,33 @@ class _DayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.line, width: 1.5),
+          color: c.card,
+          border: Border.all(color: c.line, width: 1.5),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
             SizedBox(
               width: 68,
-              child: Text(weekdayName(weekday), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.ink)),
+              child: Text(weekdayName(weekday), style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: c.ink)),
             ),
             Expanded(
               child: Text(
                 template?.name ?? '-',
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.right,
-                style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+                style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12.5, fontWeight: FontWeight.w600, color: c.inkMuted),
               ),
             ),
             const SizedBox(width: 6),
-            const Icon(LucideIcons.chevronRight, size: 17, color: AppColors.inkMuted2),
+            Icon(LucideIcons.chevronRight, size: 17, color: c.inkMuted2),
           ],
         ),
       ),

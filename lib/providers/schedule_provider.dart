@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ChangeNotifier, ThemeMode;
 
 import '../db/database_helper.dart';
 import '../models/activity.dart';
@@ -21,13 +21,16 @@ class ScheduleProvider extends ChangeNotifier {
   static const int reminderMinutesBefore = 10;
 
   static const _timeZoneKey = 'timeZone';
+  static const _themeModeKey = 'themeMode';
   static const _notifPrefix = 'notif.';
 
   /// Jendela kegiatan aktif bergeser mengikuti jam, jadi tampilan perlu
   /// menyegarkan diri tanpa interaksi pengguna.
   Timer? _ticker;
 
-  ScheduleProvider() {
+  /// [themeMode] dibaca sebelum aplikasi digambar (lihat [readThemeMode]),
+  /// supaya layar pertama tidak berkedip dari terang ke gelap.
+  ScheduleProvider({ThemeMode themeMode = ThemeMode.system}) : _themeMode = themeMode {
     _ticker = Timer.periodic(const Duration(seconds: 30), (_) => notifyListeners());
   }
 
@@ -118,6 +121,23 @@ class ScheduleProvider extends ChangeNotifier {
     AppTime.zone = zone;
     await _db.setSetting(_timeZoneKey, zone.name);
     await load();
+  }
+
+  // ---- Tampilan ----
+
+  ThemeMode _themeMode;
+  ThemeMode get themeMode => _themeMode;
+
+  static Future<ThemeMode> readThemeMode() async {
+    final name = await DatabaseHelper.instance.getSetting(_themeModeKey);
+    return ThemeMode.values.firstWhere((m) => m.name == name, orElse: () => ThemeMode.system);
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    if (mode == _themeMode) return;
+    _themeMode = mode;
+    notifyListeners();
+    await _db.setSetting(_themeModeKey, mode.name);
   }
 
   // ---- Template ----

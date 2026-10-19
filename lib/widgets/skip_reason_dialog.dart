@@ -44,13 +44,14 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final canConfirm = _selected != null;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
         ),
         padding: const EdgeInsets.fromLTRB(22, 18, 22, 26),
         child: Column(
@@ -63,19 +64,19 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.lineSoft,
+                  color: c.lineSoft,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
             ),
-            const Text(
+            Text(
               'Kenapa dibatalkan?',
-              style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
+              style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: c.ink, letterSpacing: -0.4),
             ),
             const SizedBox(height: 4),
             Text(
               '${widget.activityLabel} · dicatat ke riwayat',
-              style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+              style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: c.inkMuted),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -88,16 +89,16 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.orangeChipBg : AppColors.card,
+                      color: selected ? c.orangeChipBg : c.card,
                       borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: selected ? AppColors.orange : AppColors.line, width: 1.5),
+                      border: Border.all(color: selected ? c.orange : c.line, width: 1.5),
                     ),
                     child: Text(
                       reason,
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: selected ? AppColors.orangeChipInk : const Color(0xFF6D6354),
+                        color: selected ? c.orangeChipInk : c.inkMuted3,
                       ),
                     ),
                   ),
@@ -112,19 +113,19 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
                 decoration: InputDecoration(
                   hintText: 'Tulis alasan...',
                   filled: true,
-                  fillColor: AppColors.card,
+                  fillColor: c.card,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(color: AppColors.line, width: 1.5),
+                    borderSide: BorderSide(color: c.line, width: 1.5),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(color: AppColors.line, width: 1.5),
+                    borderSide: BorderSide(color: c.line, width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(color: AppColors.yellow, width: 1.5),
+                    borderSide: BorderSide(color: c.yellow, width: 1.5),
                   ),
                 ),
                 maxLines: 2,
@@ -139,7 +140,7 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: canConfirm ? AppColors.orange : AppColors.lineSoft2,
+                    color: canConfirm ? c.orange : c.lineSoft2,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -147,7 +148,7 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: canConfirm ? Colors.white : AppColors.inkMuted2,
+                      color: canConfirm ? Colors.white : c.inkMuted2,
                     ),
                   ),
                 ),

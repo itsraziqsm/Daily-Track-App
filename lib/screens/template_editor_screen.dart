@@ -99,24 +99,27 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
     final provider = context.read<ScheduleProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.card,
-        title: const Text('Hapus template ini?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.ink)),
-        content: Text(
-          'Hari yang memakai "${widget.template!.name}" akan dialihkan ke template lain. Catatan harian yang sudah tersimpan tidak ikut terhapus.',
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.inkMuted3, height: 1.45),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal', style: TextStyle(color: AppColors.inkMuted, fontWeight: FontWeight.w700)),
+      builder: (context) {
+        final c = AppColors.of(context);
+        return AlertDialog(
+          backgroundColor: c.card,
+          title: Text('Hapus template ini?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.ink)),
+          content: Text(
+            'Hari yang memakai "${widget.template!.name}" akan dialihkan ke template lain. Catatan harian yang sudah tersimpan tidak ikut terhapus.',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.inkMuted3, height: 1.45),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Hapus', style: TextStyle(color: AppColors.orangeChipInk, fontWeight: FontWeight.w800)),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Batal', style: TextStyle(color: c.inkMuted, fontWeight: FontWeight.w700)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('Hapus', style: TextStyle(color: c.orangeChipInk, fontWeight: FontWeight.w800)),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true) return;
     await provider.deleteTemplate(widget.template!.id);
@@ -125,21 +128,22 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final provider = context.watch<ScheduleProvider>();
     final canDelete = !_isNew && provider.templates.length > 1;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: c.bg,
       appBar: AppBar(
         title: Text(
           _isNew ? 'Template baru' : 'Edit template',
-          style: const TextStyle(fontFamily: AppFonts.title, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.4, color: AppColors.ink),
+          style: TextStyle(fontFamily: AppFonts.title, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.4, color: c.ink),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(22, 8, 22, 30),
         children: [
-          const Text('NAMA TEMPLATE', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+          Text('NAMA TEMPLATE', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
           const SizedBox(height: 9),
           TextField(
             controller: _nameController,
@@ -147,20 +151,20 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
             decoration: InputDecoration(
               hintText: 'mis. Hari Kuliah',
               filled: true,
-              fillColor: Colors.white,
+              fillColor: c.card,
               contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-              border: _fieldBorder(AppColors.line),
-              enabledBorder: _fieldBorder(AppColors.line),
-              focusedBorder: _fieldBorder(AppColors.ink),
+              border: _fieldBorder(c.line),
+              enabledBorder: _fieldBorder(c.line),
+              focusedBorder: _fieldBorder(c.ink),
             ),
-            style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.ink),
+            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: c.ink),
           ),
           const SizedBox(height: 22),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('KEGIATAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
-              Text('${_draft.length} item', style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.inkMuted2)),
+              Text('KEGIATAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+              Text('${_draft.length} item', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, color: c.inkMuted2)),
             ],
           ),
           const SizedBox(height: 11),
@@ -181,14 +185,14 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.lineSoft, width: 1.5),
+                border: Border.all(color: c.lineSoft, width: 1.5),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.plus, size: 17, color: AppColors.inkMuted),
-                  SizedBox(width: 8),
-                  Text('Tambah kegiatan', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted)),
+                  Icon(LucideIcons.plus, size: 17, color: c.inkMuted),
+                  const SizedBox(width: 8),
+                  Text('Tambah kegiatan', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.inkMuted)),
                 ],
               ),
             ),
@@ -201,12 +205,12 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
               padding: const EdgeInsets.symmetric(vertical: 15),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: _canSave ? AppColors.orange : AppColors.lineSoft2,
+                color: _canSave ? c.orange : c.lineSoft2,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
                 _canSave ? 'Simpan template' : 'Beri nama dan isi kegiatan',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _canSave ? Colors.white : AppColors.inkMuted2),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _canSave ? Colors.white : c.inkMuted2),
               ),
             ),
           ),
@@ -219,10 +223,10 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.line, width: 1.5),
+                  border: Border.all(color: c.line, width: 1.5),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Text('Hapus template ini', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.orangeChipInk)),
+                child: Text('Hapus template ini', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.orangeChipInk)),
               ),
             ),
           ],
@@ -246,14 +250,15 @@ class _DraftRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.line, width: 1.5),
+          color: c.card,
+          border: Border.all(color: c.line, width: 1.5),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -262,7 +267,7 @@ class _DraftRow extends StatelessWidget {
               width: 88,
               child: Text(
                 '${activity.startTime}–${activity.endTime}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.ink),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: c.ink),
               ),
             ),
             Expanded(
@@ -272,12 +277,12 @@ class _DraftRow extends StatelessWidget {
                   Text(
                     activity.title.isEmpty ? '(tanpa nama)' : activity.title,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.ink),
+                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: c.ink),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     activity.category,
-                    style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkMuted),
+                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted),
                   ),
                 ],
               ),
@@ -285,9 +290,9 @@ class _DraftRow extends StatelessWidget {
             GestureDetector(
               onTap: onRemove,
               behavior: HitTestBehavior.opaque,
-              child: const Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Icon(LucideIcons.trash2, size: 17, color: AppColors.inkMuted2),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(LucideIcons.trash2, size: 17, color: c.inkMuted2),
               ),
             ),
           ],
@@ -347,13 +352,14 @@ class _ActivitySheetState extends State<_ActivitySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final canSave = _title.text.trim().isNotEmpty;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
         ),
         child: SafeArea(
           top: false,
@@ -368,12 +374,12 @@ class _ActivitySheetState extends State<_ActivitySheet> {
                     width: 38,
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(color: AppColors.lineSoft, borderRadius: BorderRadius.circular(99)),
+                    decoration: BoxDecoration(color: c.lineSoft, borderRadius: BorderRadius.circular(99)),
                   ),
                 ),
-                const Text(
+                Text(
                   'Kegiatan',
-                  style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
+                  style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: c.ink, letterSpacing: -0.4),
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -391,37 +397,37 @@ class _ActivitySheetState extends State<_ActivitySheet> {
                   decoration: InputDecoration(
                     hintText: 'Nama kegiatan',
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: c.card,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-                    border: _border(AppColors.line),
-                    enabledBorder: _border(AppColors.line),
-                    focusedBorder: _border(AppColors.ink),
+                    border: _border(c.line),
+                    enabledBorder: _border(c.line),
+                    focusedBorder: _border(c.ink),
                   ),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.ink),
                 ),
                 const SizedBox(height: 14),
-                const Text('KATEGORI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: AppColors.inkMuted)),
+                Text('KATEGORI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
                 const SizedBox(height: 9),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final c in _categories)
+                    for (final cat in _categories)
                       GestureDetector(
-                        onTap: () => setState(() => _category = c),
+                        onTap: () => setState(() => _category = cat),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
                           decoration: BoxDecoration(
-                            color: _category == c ? AppColors.orangeChipBg : Colors.white,
-                            border: Border.all(color: _category == c ? AppColors.orange : AppColors.line, width: 1.5),
+                            color: _category == cat ? c.orangeChipBg : c.card,
+                            border: Border.all(color: _category == cat ? c.orange : c.line, width: 1.5),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            c,
+                            cat,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: _category == c ? AppColors.orangeChipInk : AppColors.inkMuted3,
+                              color: _category == cat ? c.orangeChipInk : c.inkMuted3,
                             ),
                           ),
                         ),
@@ -443,12 +449,12 @@ class _ActivitySheetState extends State<_ActivitySheet> {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: canSave ? AppColors.orange : AppColors.lineSoft2,
+                      color: canSave ? c.orange : c.lineSoft2,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       canSave ? 'Simpan kegiatan' : 'Isi nama kegiatan',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: canSave ? Colors.white : AppColors.inkMuted2),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: canSave ? Colors.white : c.inkMuted2),
                     ),
                   ),
                 ),
@@ -475,22 +481,23 @@ class _TimeField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.line, width: 1.5),
+          color: c.card,
+          border: Border.all(color: c.line, width: 1.5),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.inkMuted)),
+            Text(label, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, color: c.inkMuted)),
             const SizedBox(height: 2),
-            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ink)),
+            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.ink)),
           ],
         ),
       ),

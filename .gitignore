@@ -24,3 +24,6 @@ ios/.symlinks/
 
 # macOS
 .DS_Store
+
+# Tangkapan layar dari test (flutter test --dart-define=SCREENSHOTS=true)
+test/screenshots/
