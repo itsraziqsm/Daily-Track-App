@@ -16,6 +16,11 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Tandai selesai** — status ditentukan otomatis: *selesai tepat waktu*, atau *terlambat* bila
   ditandai lebih dari 35 menit (`ScheduleProvider.toleranceMinutes`) setelah rentang waktunya
   **usai**.
+- **Ikon & layar pembuka GroU** — ikon launcher (termasuk adaptif Android) dan splash native
+  dibangkitkan dari `assets/branding/` lewat `flutter_launcher_icons` dan
+  `flutter_native_splash`. Begitu Flutter siap, `LaunchSplash` melanjutkan dari frame yang sama:
+  logo melambung kecil lalu memudar ke layar Hari Ini (dipersingkat bila animasi sistem
+  dimatikan).
 - **Mode terang & gelap** — Pengaturan → Tampilan → Tema: *Ikuti sistem*, *Terang*, atau
   *Gelap*, tersimpan di database dan dibaca sebelum frame pertama supaya tidak berkedip. Palet
   (`AppColors` di `lib/theme/app_theme.dart`) adalah `ThemeExtension` dengan varian `light`
@@ -82,6 +87,8 @@ lib/
   theme/app_theme.dart           # palet terang & gelap (ThemeExtension) dan ThemeData
   services/notification_service.dart  # notifikasi lokal terjadwal
   utils/app_time.dart            # zona waktu aktif (WIB/WITA/WIT) & helper waktu
+assets/branding/                 # logo GroU + turunannya untuk ikon & splash
+tool/brand_assets.py             # membangkitkan turunan logo dari grou_source.png
 ```
 
 ## Menjalankan

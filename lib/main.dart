@@ -6,6 +6,7 @@ import 'providers/schedule_provider.dart';
 import 'screens/shell_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/launch_splash.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +34,7 @@ class GroUApp extends StatelessWidget {
           themeMode: mode,
           home: home,
         ),
-        child: const ShellScreen(),
+        child: const LaunchSplash(child: ShellScreen()),
       ),
     );
   }

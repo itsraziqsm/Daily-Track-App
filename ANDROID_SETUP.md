@@ -96,6 +96,38 @@ Kalau folder `android/` sudah pernah dibangkitkan dengan nama lama, cukup ganti
 label di atas — `applicationId` lama boleh dibiarkan supaya aplikasi yang sudah
 terpasang (beserta datanya) diperbarui, bukan dipasang sebagai aplikasi baru.
 
+### Ikon dan layar pembuka
+
+Ikon launcher dan splash native dibangkitkan dari logo GroU di
+`assets/branding/` (konfigurasinya di bagian bawah `pubspec.yaml`). Jalankan
+sekali setelah `flutter create .`, dan ulangi kalau logonya diganti:
+
+```bash
+dart run flutter_launcher_icons
+dart run flutter_native_splash:create
+```
+
+Yang dihasilkan:
+
+- **Ikon**: ilustrasi tanpa tulisan (huruf "GroU" tidak terbaca di ukuran ikon)
+  di atas latar krem, termasuk ikon adaptif Android 8+ dan ikon iOS.
+- **Splash native**: logo lengkap di tengah dengan latar sewarna aplikasi, versi
+  terang dan gelap mengikuti mode sistem. Di Android 12+ sistem hanya
+  mengizinkan ikon dalam lingkaran, jadi yang tampil ilustrasinya saja.
+
+Setelah splash native, `LaunchSplash` di aplikasi melanjutkan dari frame yang
+sama: logonya melambung kecil lalu memudar ke layar Hari Ini.
+
+Kalau logo sumbernya diganti, simpan di `assets/branding/grou_source.png` lalu
+bangkitkan ulang turunannya (butuh Pillow, numpy, scipy) sebelum dua perintah
+di atas:
+
+```bash
+python3 tool/brand_assets.py assets/branding/grou_source.png assets/branding
+```
+
+### Nama file APK
+
 File APK hasil build Flutter selalu bernama `app-release.apk`. Untuk installer
 bernama GroU, salin setelah build:
 
