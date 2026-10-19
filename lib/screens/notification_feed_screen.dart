@@ -54,7 +54,7 @@ class _NotifCard extends StatelessWidget {
     };
     final body = switch (log.status) {
       LogStatus.done => 'Ditandai selesai pada jadwal ${activity?.startTime ?? ''}.',
-      LogStatus.late => 'Ditandai lewat jendela toleransi ${ScheduleProvider.toleranceMinutes} menit.',
+      LogStatus.late => 'Ditandai lewat jendela toleransi ${provider.toleranceMinutes} menit.',
       LogStatus.cancelled => 'Alasan: ${log.reason ?? '-'}.',
     };
     final dot = switch (log.status) {

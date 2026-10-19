@@ -13,9 +13,12 @@ import 'package:grou/data/seed_activities.dart';
 import 'package:grou/db/database_helper.dart';
 import 'package:grou/models/daily_log.dart';
 import 'package:grou/providers/schedule_provider.dart';
+import 'package:grou/screens/cancellation_log_screen.dart';
 import 'package:grou/screens/manage_templates_screen.dart';
 import 'package:grou/screens/notification_feed_screen.dart';
+import 'package:grou/screens/settings_tab.dart';
 import 'package:grou/screens/shell_screen.dart';
+import 'package:grou/screens/stats_screen.dart';
 import 'package:grou/screens/template_editor_screen.dart';
 import 'package:grou/theme/app_theme.dart';
 import 'package:grou/utils/app_time.dart';
@@ -120,34 +123,59 @@ void main() {
       }
 
       await shot('1_hari_ini');
-      for (final (i, tab) in ['Kalender', 'Statistik', 'Pengaturan'].indexed) {
+      for (final (i, tab) in ['Agenda', 'Target', 'Pengaturan'].indexed) {
         await tester.tap(find.byTooltip(tab));
         await shot('${i + 2}_${tab.toLowerCase()}');
       }
+
+      // Toleransi terlambat bisa diubah dari Pengaturan dan langsung berlaku.
+      final settingsList = find.descendant(of: find.byType(SettingsTab), matching: find.byType(Scrollable)).first;
+      await tester.tap(find.text('Toleransi terlambat'));
+      await shot('5_sheet_toleransi');
+      await tester.tap(find.text('45 mnt'));
+      await tester.pumpAndSettle();
+      expect(provider.toleranceMinutes, 45);
+      expect(find.text('45 mnt'), findsOneWidget);
+      await tester.runAsync(() => provider.setToleranceMinutes(ScheduleProvider.defaultToleranceMinutes));
+      await tester.pumpAndSettle();
+
+      // Pengaturan → Lainnya: Statistik dan Log pembatalan.
+      await tester.scrollUntilVisible(find.text('Log pembatalan'), 200, scrollable: settingsList);
+      await shot('6_pengaturan_lainnya');
+      await tester.tap(find.text('Statistik'));
+      await shot('7_statistik');
+      expect(find.byType(StatsScreen), findsOneWidget);
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Log pembatalan'));
+      await shot('8_log_pembatalan');
+      expect(find.byType(CancellationLogScreen), findsOneWidget);
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
 
       final nav = navigatorKey.currentState!;
       final context = navigatorKey.currentContext!;
 
       showThemeModeSheet(context, mode);
-      await shot('5_sheet_tema');
+      await shot('9_sheet_tema');
       nav.pop();
 
       showSkipReasonDialog(context, '${provider.activities.first.startTime} · ${provider.activities.first.title}');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Lainnya'));
-      await shot('6_sheet_batal');
+      await shot('10_sheet_batal');
       nav.pop();
 
       nav.push(MaterialPageRoute(builder: (_) => const NotificationFeedScreen()));
-      await shot('7_notifikasi');
+      await shot('11_notifikasi');
       nav.pop();
 
       nav.push(MaterialPageRoute(builder: (_) => const ManageTemplatesScreen()));
-      await shot('8_kelola_template');
+      await shot('12_kelola_template');
       nav.pop();
 
       nav.push(MaterialPageRoute(builder: (_) => TemplateEditorScreen(template: provider.templates.first)));
-      await shot('9_edit_template');
+      await shot('13_edit_template');
       nav.pop();
       await tester.pumpAndSettle();
     });

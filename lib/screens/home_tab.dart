@@ -56,6 +56,7 @@ class HomeTab extends StatelessWidget {
                   isLocked: provider.isLocked(activities[i]),
                   isUpcoming: provider.isUpcoming(activities[i]),
                   isLast: i == activities.length - 1,
+                  toleranceMinutes: provider.toleranceMinutes,
                   onCheck: () => provider.toggle(activities[i]),
                   onCancel: () async {
                     final reason = await showSkipReasonDialog(

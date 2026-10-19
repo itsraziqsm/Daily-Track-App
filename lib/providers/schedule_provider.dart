@@ -13,15 +13,17 @@ class ScheduleProvider extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper.instance;
   final NotificationService _notifications = NotificationService.instance;
 
-  /// Kegiatan yang dicentang lebih dari sekian menit setelah rentang waktunya
-  /// usai dihitung terlambat.
-  static const int toleranceMinutes = 35;
+  /// Kegiatan yang dicentang lebih dari [toleranceMinutes] setelah rentang
+  /// waktunya usai dihitung terlambat. Bisa diubah di Pengaturan.
+  static const int defaultToleranceMinutes = 35;
+  static const toleranceOptions = [0, 10, 15, 20, 30, 35, 45, 60, 90, 120];
 
   /// Pengingat kegiatan muncul sekian menit sebelum jam mulai.
   static const int reminderMinutesBefore = 10;
 
   static const _timeZoneKey = 'timeZone';
   static const _themeModeKey = 'themeMode';
+  static const _toleranceKey = 'toleranceMinutes';
   static const _notifPrefix = 'notif.';
 
   /// Jendela kegiatan aktif bergeser mengikuti jam, jadi tampilan perlu
@@ -95,6 +97,7 @@ class ScheduleProvider extends ChangeNotifier {
 
   Future<void> load() async {
     AppTime.zone = AppTimeZoneInfo.fromName(await _db.getSetting(_timeZoneKey));
+    _toleranceMinutes = int.tryParse(await _db.getSetting(_toleranceKey) ?? '') ?? defaultToleranceMinutes;
     for (final key in notificationPrefs.keys.toList()) {
       notificationPrefs[key] = (await _db.getSetting('$_notifPrefix$key')) == 'true';
     }
@@ -121,6 +124,20 @@ class ScheduleProvider extends ChangeNotifier {
     AppTime.zone = zone;
     await _db.setSetting(_timeZoneKey, zone.name);
     await load();
+  }
+
+  // ---- Toleransi terlambat ----
+
+  int _toleranceMinutes = defaultToleranceMinutes;
+  int get toleranceMinutes => _toleranceMinutes;
+
+  /// Hanya memengaruhi centang berikutnya dan batas kunci; status yang sudah
+  /// tercatat (selesai/terlambat) tidak dihitung ulang.
+  Future<void> setToleranceMinutes(int minutes) async {
+    if (minutes == _toleranceMinutes) return;
+    _toleranceMinutes = minutes;
+    notifyListeners();
+    await _db.setSetting(_toleranceKey, '$minutes');
   }
 
   // ---- Tampilan ----
@@ -185,23 +202,6 @@ class ScheduleProvider extends ChangeNotifier {
     return true;
   }
 
-  /// Hasil diagnostik notifikasi untuk ditampilkan di Pengaturan.
-  int pendingNotifications = 0;
-  bool exactAlarmsAllowed = true;
-
-  Future<void> refreshNotificationStatus() async {
-    pendingNotifications = await _notifications.pendingCount();
-    exactAlarmsAllowed = await _notifications.canScheduleExact();
-    notificationsAllowed = await _notifications.hasPermission();
-    notifyListeners();
-  }
-
-  Future<bool> sendTestNotification() async {
-    final ok = await _notifications.sendTest();
-    await refreshNotificationStatus();
-    return ok;
-  }
-
   Future<void> _syncNotifications() async {
     await _notifications.reschedule(
       activities: activities,
@@ -210,7 +210,8 @@ class ScheduleProvider extends ChangeNotifier {
       nightSummary: notificationPrefs['night'] ?? false,
       minutesBefore: reminderMinutesBefore,
     );
-    await refreshNotificationStatus();
+    notificationsAllowed = await _notifications.hasPermission();
+    notifyListeners();
   }
 
   // ---- Status kegiatan ----

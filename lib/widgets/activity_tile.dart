@@ -4,7 +4,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../models/activity.dart';
 import '../models/daily_log.dart';
-import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
 import 'animated_check_circle.dart';
 
@@ -23,6 +22,9 @@ class ActivityTile extends StatelessWidget {
   /// Jam mulainya belum tiba — belum bisa ditandai selesai.
   final bool isUpcoming;
   final bool isLast;
+
+  /// Jendela toleransi yang berlaku, untuk keterangan status terlambat.
+  final int toleranceMinutes;
   final VoidCallback onCheck;
   final VoidCallback onCancel;
 
@@ -34,6 +36,7 @@ class ActivityTile extends StatelessWidget {
     required this.isLocked,
     required this.isUpcoming,
     required this.isLast,
+    required this.toleranceMinutes,
     required this.onCheck,
     required this.onCancel,
   });
@@ -85,7 +88,7 @@ class ActivityTile extends StatelessWidget {
             : null;
 
     final statusText = isLate
-        ? 'Selesai di luar toleransi ${ScheduleProvider.toleranceMinutes} mnt'
+        ? 'Selesai di luar toleransi $toleranceMinutes mnt'
         : isDone
             ? 'Selesai tepat waktu'
             : isCancelled

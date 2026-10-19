@@ -8,7 +8,10 @@ import '../theme/app_theme.dart';
 import '../utils/app_time.dart';
 import '../widgets/theme_mode_sheet.dart';
 import '../widgets/timezone_sheet.dart';
+import '../widgets/tolerance_sheet.dart';
+import 'cancellation_log_screen.dart';
 import 'manage_templates_screen.dart';
+import 'stats_screen.dart';
 
 /// Tab "Pengaturan" — template yang aktif hari ini, pintu masuk ke Kelola
 /// Template, aturan pelacakan, dan preferensi pengingat.
@@ -20,6 +23,7 @@ class SettingsTab extends StatelessWidget {
     final c = AppColors.of(context);
     final provider = context.watch<ScheduleProvider>();
     final active = provider.activeTemplate;
+    final cancelled = provider.cancelledLogs.length;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
@@ -68,38 +72,10 @@ class SettingsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 9),
-        GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ManageTemplatesScreen()),
-          ),
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-            decoration: BoxDecoration(
-              color: c.card,
-              border: Border.all(color: c.line, width: 1.5),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Kelola Template', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: c.ink)),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${provider.templates.length} template · atur kegiatan dan hari pemakaiannya',
-                        style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.inkMuted),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Icon(LucideIcons.chevronRight, size: 18, color: c.inkMuted2),
-              ],
-            ),
-          ),
+        _LinkRow(
+          label: 'Kelola Template',
+          sub: '${provider.templates.length} template · atur kegiatan dan hari pemakaiannya',
+          builder: (_) => const ManageTemplatesScreen(),
         ),
         const SizedBox(height: 26),
         Text('TAMPILAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
@@ -116,10 +92,14 @@ class SettingsTab extends StatelessWidget {
         const SizedBox(height: 26),
         Text('ATURAN PELACAKAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
         const SizedBox(height: 11),
-        const _RuleRow(
-          label: 'Jendela toleransi terlambat',
+        _RuleRow(
+          label: 'Toleransi terlambat',
           sub: 'Dicentang lebih dari ini setelah rentang usai dihitung terlambat',
-          value: '${ScheduleProvider.toleranceMinutes} mnt',
+          value: toleranceLabel(provider.toleranceMinutes),
+          onTap: () async {
+            final picked = await showToleranceSheet(context, provider.toleranceMinutes);
+            if (picked != null) await provider.setToleranceMinutes(picked);
+          },
         ),
         const SizedBox(height: 9),
         _RuleRow(
@@ -154,36 +134,22 @@ class SettingsTab extends StatelessWidget {
           value: provider.notificationPrefs['night'] ?? false,
           onTap: () => _toggle(context, 'night'),
         ),
+        const SizedBox(height: 26),
+        Text('LAINNYA', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+        const SizedBox(height: 11),
+        _LinkRow(
+          label: 'Statistik',
+          sub: 'Disiplin mingguan, grafik per hari, alasan tersering',
+          builder: (_) => const StatsScreen(),
+        ),
         const SizedBox(height: 9),
-        _RuleRow(
-          label: 'Tes notifikasi',
-          sub: '${provider.pendingNotifications} terjadwal di sistem'
-              '${provider.exactAlarmsAllowed ? '' : ' · alarm presis ditolak'}',
-          value: 'Kirim',
-          onTap: () => _sendTest(context),
+        _LinkRow(
+          label: 'Log pembatalan',
+          sub: cancelled == 0 ? 'Belum ada kegiatan yang dibatalkan' : '$cancelled kegiatan dibatalkan · per hari',
+          builder: (_) => const CancellationLogScreen(),
         ),
       ],
     );
-  }
-
-  /// Mengirim dua notifikasi uji: satu seketika, satu lewat jalur terjadwal.
-  /// Perbedaan hasilnya menunjukkan di mana rantainya putus.
-  Future<void> _sendTest(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final ok = await context.read<ScheduleProvider>().sendTestNotification();
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 8),
-          content: Text(
-            ok
-                ? 'Satu notifikasi dikirim sekarang, satu lagi dijadwalkan 10 detik lagi. '
-                    'Kalau yang kedua tidak muncul, lihat ANDROID_SETUP.md.'
-                : 'Notifikasi belum aktif di build ini.',
-          ),
-        ),
-      );
   }
 
   /// Menyalakan pengingat sekaligus meminta izin sistem. Kalau izinnya ditolak,
@@ -199,6 +165,48 @@ class SettingsTab extends StatelessWidget {
           unavailable
               ? 'Notifikasi belum aktif di build ini. Hentikan aplikasi lalu jalankan ulang.'
               : 'Izin notifikasi belum diberikan. Aktifkan lewat pengaturan sistem.',
+        ),
+      ),
+    );
+  }
+}
+
+/// Baris yang membuka layar lain.
+class _LinkRow extends StatelessWidget {
+  final String label;
+  final String sub;
+  final WidgetBuilder builder;
+
+  const _LinkRow({required this.label, required this.sub, required this.builder});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: builder)),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        decoration: BoxDecoration(
+          color: c.card,
+          border: Border.all(color: c.line, width: 1.5),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: c.ink)),
+                  const SizedBox(height: 3),
+                  Text(sub, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.inkMuted)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(LucideIcons.chevronRight, size: 18, color: c.inkMuted2),
+          ],
         ),
       ),
     );

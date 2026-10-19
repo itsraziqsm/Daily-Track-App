@@ -4,11 +4,11 @@ import 'package:provider/provider.dart';
 
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
-import 'calendar_tab.dart';
+import 'agenda_tab.dart';
 import 'home_tab.dart';
 import 'notification_feed_screen.dart';
 import 'settings_tab.dart';
-import 'stats_tab.dart';
+import 'target_tab.dart';
 
 /// Shell utama aplikasi: app bar + 4 tab bawah, mengikuti struktur navigasi desain.
 class ShellScreen extends StatefulWidget {
@@ -24,8 +24,8 @@ class _ShellScreenState extends State<ShellScreen> {
 
   static const _tabIcons = [
     (icon: LucideIcons.listTodo, tooltip: 'Hari Ini'),
-    (icon: LucideIcons.calendarDays, tooltip: 'Kalender'),
-    (icon: LucideIcons.chartColumn, tooltip: 'Statistik'),
+    (icon: LucideIcons.calendarDays, tooltip: 'Agenda'),
+    (icon: LucideIcons.target, tooltip: 'Target'),
     (icon: LucideIcons.settings, tooltip: 'Pengaturan'),
   ];
 
@@ -95,8 +95,8 @@ class _ShellScreenState extends State<ShellScreen> {
         onPageChanged: (index) => setState(() => _tab = index),
         children: const [
           _KeepAlive(child: HomeTab()),
-          _KeepAlive(child: CalendarTab()),
-          _KeepAlive(child: StatsTab()),
+          _KeepAlive(child: AgendaTab()),
+          _KeepAlive(child: TargetTab()),
           _KeepAlive(child: SettingsTab()),
         ],
       ),

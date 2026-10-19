@@ -35,8 +35,6 @@ class NotificationService {
   static const _activityIdBase = 1000;
   static const _morningId = 10;
   static const _nightId = 11;
-  static const _testId = 1;
-  static const _testScheduledId = 2;
 
   /// Alarm presis dipakai selama sistem mengizinkan. Pengingat "10 menit
   /// sebelum mulai" kehilangan gunanya kalau digeser Doze berjam-jam, jadi
@@ -216,43 +214,6 @@ class NotificationService {
       debugPrint('Alarm presis tidak diizinkan; beralih ke mode inexact.');
       await attempt(AndroidScheduleMode.inexactAllowWhileIdle);
     }
-  }
-
-  /// Notifikasi uji: satu tampil seketika, satu lagi lewat jalur terjadwal
-  /// beberapa detik kemudian. Kalau yang pertama muncul tapi yang kedua tidak,
-  /// masalahnya ada di jalur alarm — biasanya receiver yang belum terdaftar di
-  /// AndroidManifest, atau pembatasan baterai dari pabrikan.
-  Future<bool> sendTest({Duration delay = const Duration(seconds: 10)}) async {
-    if (!isSupported) return false;
-    await init();
-    if (!_ready) return false;
-    await _plugin.show(_testId, 'Notifikasi aktif', 'Ini tampil langsung tanpa penjadwalan.', _details);
-    await _schedule(
-      id: _testScheduledId,
-      title: 'Uji pengingat terjadwal',
-      body: 'Dijadwalkan ${delay.inSeconds} detik lalu — jalur alarm bekerja.',
-      at: tz.TZDateTime.from(DateTime.now().toUtc().add(delay), tz.UTC),
-      repeatDaily: false,
-    );
-    return true;
-  }
-
-  /// Jumlah notifikasi yang benar-benar tersimpan di antrean sistem.
-  Future<int> pendingCount() async {
-    if (!isSupported) return 0;
-    await init();
-    if (!_ready) return 0;
-    return (await _plugin.pendingNotificationRequests()).length;
-  }
-
-  /// Apakah sistem masih mengizinkan alarm presis.
-  Future<bool> canScheduleExact() async {
-    if (!isSupported || !Platform.isAndroid) return true;
-    await init();
-    if (!_ready) return false;
-    final android =
-        _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    return await android?.canScheduleExactNotifications() ?? false;
   }
 
   /// Instan UTC berikutnya untuk [minutesOfDay] pada zona waktu aplikasi.
