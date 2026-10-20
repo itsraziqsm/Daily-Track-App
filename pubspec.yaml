@@ -74,13 +74,14 @@ flutter:
 # Ikon launcher. Setelah `flutter create .`, jalankan:
 #   dart run flutter_launcher_icons
 # Aset dibangkitkan dari assets/branding/grou_source.png oleh tool/brand_assets.py.
+# Aplikasi ini khusus Android; iOS dimatikan supaya generator tidak mencari
+# folder ios/ yang memang tidak ada.
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false
   image_path: assets/branding/icon.png
   adaptive_icon_background: "#FFFBF0"
   adaptive_icon_foreground: assets/branding/icon_foreground.png
-  remove_alpha_ios: true
   min_sdk_android: 21
 
 # Splash native, tampil sebelum Flutter siap. Warna = AppColors.light/dark.bg,
@@ -97,4 +98,5 @@ flutter_native_splash:
     icon_background_color: "#FFFBF0"
     color_dark: "#16130F"
     icon_background_color_dark: "#FFFBF0"
+  ios: false
   web: false

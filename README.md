@@ -100,11 +100,11 @@ tool/brand_assets.py             # membangkitkan turunan logo dari grou_source.p
 ## Menjalankan
 
 Repo ini berisi kode Dart/Flutter (`lib/`, `pubspec.yaml`) tanpa folder platform native
-(`android/`, `ios/`), karena dibuat tanpa Flutter SDK terpasang di lingkungan pengembangan ini.
+(`android/`), karena dibuat tanpa Flutter SDK terpasang di lingkungan pengembangan ini.
 Untuk menjalankan di perangkat:
 
 ```bash
-flutter create .        # membangkitkan folder android/ dan ios/ di sekitar lib/ yang sudah ada
+flutter create --platforms=android .   # membangkitkan folder android/ di sekitar lib/ yang sudah ada
 flutter pub get
 flutter run
 ```

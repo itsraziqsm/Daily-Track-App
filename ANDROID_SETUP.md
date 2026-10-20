@@ -77,7 +77,7 @@ Nama paket Dart sudah `grou`, jadi `flutter create .` pada folder kosong membuat
 `applicationId` `com.example.grou`. Ganti `--org` kalau mau ID sendiri:
 
 ```bash
-flutter create --org com.namakamu --platforms=android,ios .
+flutter create --org com.namakamu --platforms=android .
 ```
 
 Nama di bawah ikon launcher diatur terpisah. Di
@@ -89,8 +89,6 @@ Nama di bawah ikon launcher diatur terpisah. Di
     android:label="GroU"
     ...>
 ```
-
-(iOS: `CFBundleDisplayName` di `ios/Runner/Info.plist` → `GroU`.)
 
 Kalau folder `android/` sudah pernah dibangkitkan dengan nama lama, cukup ganti
 label di atas — `applicationId` lama boleh dibiarkan supaya aplikasi yang sudah
@@ -110,7 +108,7 @@ dart run flutter_native_splash:create
 Yang dihasilkan:
 
 - **Ikon**: ilustrasi tanpa tulisan (huruf "GroU" tidak terbaca di ukuran ikon)
-  di atas latar krem, termasuk ikon adaptif Android 8+ dan ikon iOS.
+  di atas latar krem, termasuk ikon adaptif Android 8+.
 - **Splash native**: logo lengkap di tengah dengan latar sewarna aplikasi, versi
   terang dan gelap mengikuti mode sistem. Di Android 12+ sistem hanya
   mengizinkan ikon dalam lingkaran, jadi yang tampil ilustrasinya saja.
