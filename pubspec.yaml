@@ -28,9 +28,11 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  sqflite_common_ffi: ^2.4.4
-  flutter_launcher_icons: ^0.14.4
-  flutter_native_splash: ^2.4.8
+  # 2.4.0+3 adalah versi terakhir yang masih mendukung Dart 3.10–3.11; di SDK
+  # yang lebih baru pub otomatis memilih versi 2.4.x terbaru.
+  sqflite_common_ffi: ^2.4.0+3
+  flutter_launcher_icons: ^0.14.0
+  flutter_native_splash: ^2.4.0
 
 flutter:
   uses-material-design: true
