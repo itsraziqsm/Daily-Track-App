@@ -42,12 +42,25 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Animasi centang** — cincin menyapu melingkar, lingkaran terisi, lalu centang digambar
   (`lib/widgets/animated_check_circle.dart`). Irama dan proporsinya diambil dari aset animasi
   yang disediakan, tapi digambar sebagai vektor agar transparan, tajam, dan ikut warna palet.
-- **Data lokal** — sqflite dengan skema v3: `daily_logs`, `app_settings`, `templates`,
-  `template_activities`, `day_assignments`. Migrasi dari skema lama menjaga log yang sudah ada.
+- **Data lokal** — sqflite dengan skema v4: `daily_logs`, `app_settings`, `templates`,
+  `template_activities`, `day_assignments`, `agenda_items`, `agenda_occurrences`. Migrasi dari
+  skema lama menjaga log yang sudah ada. Menyunting template mempertahankan id kegiatannya, jadi
+  log lama tetap menunjuk ke kegiatan yang benar.
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas
   ("Lainnya"), tercatat ke riwayat dengan tanggal & jam.
-- **Agenda** *(in development)* — grid bulanan dengan titik status per hari (sempurna / ada
-  terlambat / ada pembatalan) dipertahankan sebagai kerangka; fitur agendanya sendiri belum ada.
+- **Agenda** — acara dan rencana di luar rutinitas template (rapat, ujian, gym). Kalender bulanan
+  menandai tanggal yang punya agenda (titik oranye, pudar bila semuanya selesai); ketuk tanggal
+  untuk melihat daftarnya, ketuk agenda untuk menyunting.
+  - Sepanjang hari atau berjam, dengan catatan opsional.
+  - **Berulang**: harian, mingguan (pilih harinya), bulanan, tahunan, dengan tanggal akhir
+    opsional. Tanggal yang tidak ada di bulan itu (mis. 31) dilewati. Menghapus agenda berulang
+    bisa untuk satu tanggal saja atau semuanya.
+  - **Ditandai selesai** per tanggal, jadi agenda berulang tidak ikut selesai di minggu berikutnya.
+  - **Pengingat** X menit sebelum mulai (atau pukul 06.00 / H-1 20.00 untuk agenda sepanjang
+    hari), dijadwalkan untuk 30 hari ke depan dan diperbarui tiap aplikasi dibuka. Kemunculan yang
+    sudah selesai tidak diingatkan.
+  - Titik status riwayat (sempurna / terlambat / batal) tidak lagi tampil di sini, tapi tetap
+    tersedia di `lib/widgets/history_status.dart` untuk dipakai lagi.
 - **Target** *(in development)* — baru berupa halaman penanda.
 - **Pengaturan → Lainnya**
   - **Statistik** — ring disiplin mingguan, grafik batang per hari, peringkat alasan pembatalan
@@ -75,15 +88,16 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 ```
 lib/
   data/seed_activities.dart      # isi template bawaan (23 kegiatan) + daftar alasan batal
-  models/                        # Activity, Template, DailyLog (status: done/late/cancelled)
+  models/                        # Activity, Template, DailyLog (done/late/cancelled), AgendaItem
   db/database_helper.dart        # akses sqflite
   providers/schedule_provider.dart   # state management (Provider/ChangeNotifier), statistik & kalender
+  providers/agenda_provider.dart     # agenda, status selesai per tanggal, pengingat agenda
   screens/
     shell_screen.dart            # app bar + bottom nav 4 tab (swipe antar halaman)
     manage_templates_screen.dart # daftar template + penugasan per hari
     template_editor_screen.dart  # sunting/buat template
     home_tab.dart                # Hari Ini
-    agenda_tab.dart              # Agenda (in development, grid kalender)
+    agenda_tab.dart              # Agenda: kalender + daftar agenda per tanggal
     target_tab.dart              # Target (in development)
     stats_screen.dart            # Pengaturan → Lainnya → Statistik
     cancellation_log_screen.dart # Pengaturan → Lainnya → Log pembatalan

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../providers/agenda_provider.dart';
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
 import 'agenda_tab.dart';
@@ -34,6 +35,7 @@ class _ShellScreenState extends State<ShellScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ScheduleProvider>().load();
+      context.read<AgendaProvider>().load();
     });
   }
 

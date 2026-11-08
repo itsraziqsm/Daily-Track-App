@@ -9,6 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Teks bawaan widget Material (pemilih tanggal/jam, tombol dialog) dalam
+  # bahasa Indonesia.
+  flutter_localizations:
+    sdk: flutter
   provider: ^6.1.2
   # Dipin persis ke 2.3.3+1: sqflite_android 2.4.x pindah ke jembatan JNI
   # (libdartjni.so) yang gagal dimuat di banyak perangkat/emulator
@@ -16,7 +20,7 @@ dependencies:
   # memakai implementasi Android lama yang stabil.
   sqflite: 2.3.3+1
   path: ^1.9.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   # Font ikon Lucide ikut dibundel sebagai aset paket (assets/lucide.ttf),
   # tidak diambil dari CDN saat aplikasi berjalan.
   lucide_icons_flutter: ^3.1.20

@@ -20,7 +20,7 @@ class Activity {
 
   String get timeRange => '$startTime - $endTime';
 
-  static int _toMinutes(String hhmm) {
+  static int parseMinutes(String hhmm) {
     final parts = hhmm.split(RegExp(r'[.:]'));
     return int.parse(parts[0]) * 60 + int.parse(parts[1]);
   }
@@ -30,8 +30,8 @@ class Activity {
     return '${(m ~/ 60).toString().padLeft(2, '0')}.${(m % 60).toString().padLeft(2, '0')}';
   }
 
-  int get startMinutes => _toMinutes(startTime);
-  int get endMinutes => _toMinutes(endTime);
+  int get startMinutes => parseMinutes(startTime);
+  int get endMinutes => parseMinutes(endTime);
 
   /// Durasi kegiatan dalam menit (menangani kegiatan yang melewati tengah malam, mis. Tidur).
   int get durationMinutes {

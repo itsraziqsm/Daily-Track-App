@@ -11,7 +11,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grou/data/seed_activities.dart';
 import 'package:grou/db/database_helper.dart';
+import 'package:grou/models/agenda_item.dart';
 import 'package:grou/models/daily_log.dart';
+import 'package:grou/providers/agenda_provider.dart';
 import 'package:grou/providers/schedule_provider.dart';
 import 'package:grou/screens/cancellation_log_screen.dart';
 import 'package:grou/screens/manage_templates_screen.dart';
@@ -70,8 +72,36 @@ Future<void> _seedLogs(ScheduleProvider provider) async {
   await provider.load();
 }
 
+/// Agenda contoh di sekitar hari ini: satu berjam dengan catatan, satu
+/// sepanjang hari, satu berulang yang sudah selesai, dan satu di hari lain.
+Future<void> _seedAgenda(AgendaProvider agenda) async {
+  final now = AppTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  await agenda.save(AgendaItem(title: 'Kumpul tugas akhir', date: today));
+  await agenda.save(AgendaItem(
+    title: 'Rapat proyek',
+    note: 'Bawa laptop dan draf laporan minggu ini',
+    date: today,
+    startTime: '13.00',
+    endTime: '14.00',
+    reminderMinutes: 15,
+  ));
+  await agenda.save(AgendaItem(
+    title: 'Gym',
+    date: today,
+    startTime: '18.00',
+    endTime: '19.30',
+    repeat: AgendaRepeat.weekly,
+    repeatDays: [today.weekday, (today.weekday + 1) % 7 + 1],
+    reminderMinutes: 30,
+  ));
+  await agenda.save(AgendaItem(title: 'Bayar kos', date: today.add(const Duration(days: 3)), repeat: AgendaRepeat.monthly));
+  await agenda.toggleDone(agenda.items.firstWhere((i) => i.title == 'Gym'), today);
+}
+
 void main() {
   late ScheduleProvider provider;
+  late AgendaProvider agenda;
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -92,13 +122,20 @@ void main() {
         provider = ScheduleProvider(themeMode: mode);
         await provider.load();
         if (provider.allLogs.isEmpty) await _seedLogs(provider);
+        agenda = AgendaProvider();
+        await agenda.load();
+        if (agenda.items.isEmpty) await _seedAgenda(agenda);
       });
       addTearDown(provider.dispose);
+      addTearDown(agenda.dispose);
 
       final navigatorKey = GlobalKey<NavigatorState>();
       await tester.pumpWidget(
-        ChangeNotifierProvider.value(
-          value: provider,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: provider),
+            ChangeNotifierProvider.value(value: agenda),
+          ],
           child: MaterialApp(
             navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false,
@@ -109,8 +146,18 @@ void main() {
           ),
         ),
       );
-      // ShellScreen memuat ulang data setelah frame pertama.
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+      // ShellScreen memuat ulang data setelah frame pertama, di dalam waktu
+      // palsu test. Tiap langkah database butuh waktu nyata untuk selesai dan
+      // satu pump untuk melanjutkan ke langkah berikutnya; panggilan yang
+      // tertinggal akan mengunci database untuk test berikutnya.
+      Future<void> settleDatabase() async {
+        for (var i = 0; i < 12; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 40)));
+          await tester.pump();
+        }
+      }
+
+      await settleDatabase();
       await tester.pumpAndSettle();
 
       Future<void> shot(String name) async {
@@ -122,9 +169,20 @@ void main() {
       }
 
       await shot('1_hari_ini');
-      for (final (i, tab) in ['Agenda', 'Target', 'Pengaturan'].indexed) {
+      await tester.tap(find.byTooltip('Agenda'));
+      await shot('2_agenda');
+      expect(find.text('Rapat proyek'), findsOneWidget);
+      await tester.ensureVisible(find.text('Gym'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Gym'));
+      await shot('2b_sheet_agenda');
+      expect(find.text('Edit agenda'), findsOneWidget);
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+
+      for (final (i, tab) in ['Target', 'Pengaturan'].indexed) {
         await tester.tap(find.byTooltip(tab));
-        await shot('${i + 2}_${tab.toLowerCase()}');
+        await shot('${i + 3}_${tab.toLowerCase()}');
       }
 
       // Toleransi terlambat bisa diubah dari Pengaturan dan langsung berlaku.
@@ -177,6 +235,7 @@ void main() {
       await shot('13_edit_template');
       nav.pop();
       await tester.pumpAndSettle();
+      await settleDatabase();
     });
   }
 }

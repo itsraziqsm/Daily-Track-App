@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
+import 'providers/agenda_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'screens/shell_screen.dart';
 import 'services/notification_service.dart';
@@ -22,8 +24,16 @@ class GroUApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ScheduleProvider(themeMode: themeMode),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ScheduleProvider(themeMode: themeMode)),
+        // Pengingat agenda dihitung pada zona waktu aplikasi, jadi ikut
+        // dijadwal ulang saat zona di Pengaturan berubah.
+        ChangeNotifierProxyProvider<ScheduleProvider, AgendaProvider>(
+          create: (_) => AgendaProvider(),
+          update: (_, schedule, agenda) => agenda!..onTimeZone(schedule.timeZone),
+        ),
+      ],
       child: Selector<ScheduleProvider, ThemeMode>(
         selector: (_, provider) => provider.themeMode,
         builder: (context, mode, home) => MaterialApp(
@@ -32,6 +42,9 @@ class GroUApp extends StatelessWidget {
           theme: buildAppTheme(AppColors.light),
           darkTheme: buildAppTheme(AppColors.dark),
           themeMode: mode,
+          locale: const Locale('id', 'ID'),
+          supportedLocales: const [Locale('id', 'ID')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
           home: home,
         ),
         child: const LaunchSplash(child: ShellScreen()),

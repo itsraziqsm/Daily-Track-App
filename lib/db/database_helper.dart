@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../data/seed_activities.dart';
 import '../models/activity.dart';
+import '../models/agenda_item.dart';
 import '../models/daily_log.dart';
 import '../models/template.dart';
 
@@ -32,13 +33,15 @@ class DatabaseHelper {
     final path = pathOverride ?? join(await getDatabasesPath(), 'jadwal_harian.db');
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute(_createLogs);
         await db.execute(_createSettings);
         await db.execute(_createTemplates);
         await db.execute(_createTemplateActivities);
         await db.execute(_createDayAssignments);
+        await db.execute(_createAgendaItems);
+        await db.execute(_createAgendaOccurrences);
         await _seedDefaultTemplate(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
@@ -50,6 +53,10 @@ class DatabaseHelper {
           // Kegiatan lama memakai id 1..23 yang sama dengan seed, jadi log yang
           // sudah tercatat tetap menunjuk ke kegiatan yang benar.
           await _seedDefaultTemplate(db);
+        }
+        if (oldVersion < 4) {
+          await db.execute(_createAgendaItems);
+          await db.execute(_createAgendaOccurrences);
         }
       },
     );
@@ -98,6 +105,32 @@ class DatabaseHelper {
     CREATE TABLE day_assignments (
       weekday INTEGER PRIMARY KEY,
       templateId INTEGER NOT NULL
+    )
+  ''';
+
+  static const _createAgendaItems = '''
+    CREATE TABLE agenda_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      note TEXT,
+      date TEXT NOT NULL,
+      startTime TEXT,
+      endTime TEXT,
+      repeat TEXT NOT NULL,
+      repeatDays TEXT NOT NULL,
+      repeatUntil TEXT,
+      reminderMinutes INTEGER
+    )
+  ''';
+
+  /// Status per tanggal untuk agenda (selesai, atau dilewati khusus tanggal
+  /// itu). Tanggal tanpa baris berarti agenda biasa yang belum selesai.
+  static const _createAgendaOccurrences = '''
+    CREATE TABLE agenda_occurrences (
+      itemId INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      state TEXT NOT NULL,
+      PRIMARY KEY (itemId, date)
     )
   ''';
 
@@ -263,5 +296,55 @@ class DatabaseHelper {
     final db = await database;
     final rows = await db.query('daily_logs', orderBy: 'date DESC, timestamp DESC');
     return rows.map(DailyLog.fromMap).toList();
+  }
+
+  // ---- Agenda ----
+
+  Future<List<AgendaItem>> allAgendaItems() async {
+    final db = await database;
+    final rows = await db.query('agenda_items', orderBy: 'date, startTime, id');
+    return rows.map(AgendaItem.fromMap).toList();
+  }
+
+  /// Menyimpan agenda: id 0 berarti baru. Mengembalikan id-nya.
+  Future<int> saveAgendaItem(AgendaItem item) async {
+    final db = await database;
+    final map = item.toMap()..remove('id');
+    if (item.id == 0) return db.insert('agenda_items', map);
+    await db.update('agenda_items', map, where: 'id = ?', whereArgs: [item.id]);
+    return item.id;
+  }
+
+  Future<void> deleteAgendaItem(int id) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('agenda_occurrences', where: 'itemId = ?', whereArgs: [id]);
+      await txn.delete('agenda_items', where: 'id = ?', whereArgs: [id]);
+    });
+  }
+
+  /// Status per tanggal, dengan kunci `"itemId|yyyy-MM-dd"`.
+  Future<Map<String, AgendaOccurrenceState>> agendaOccurrences() async {
+    final db = await database;
+    final rows = await db.query('agenda_occurrences');
+    return {
+      for (final r in rows)
+        '${r['itemId']}|${r['date']}':
+            AgendaOccurrenceState.values.byName(r['state'] as String),
+    };
+  }
+
+  /// Mengisi atau menghapus (bila [state] null) status satu kemunculan.
+  Future<void> setAgendaOccurrence(int itemId, String date, AgendaOccurrenceState? state) async {
+    final db = await database;
+    if (state == null) {
+      await db.delete('agenda_occurrences', where: 'itemId = ? AND date = ?', whereArgs: [itemId, date]);
+    } else {
+      await db.insert(
+        'agenda_occurrences',
+        {'itemId': itemId, 'date': date, 'state': state.name},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 }

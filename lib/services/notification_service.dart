@@ -9,8 +9,17 @@ import 'package:timezone/timezone.dart' as tz;
 import '../models/activity.dart';
 import '../utils/app_time.dart';
 
-/// Notifikasi lokal terjadwal: pengingat tiap kegiatan, ringkasan pagi, dan
-/// ringkasan malam.
+/// Pengingat agenda yang sudah dihitung ke instan UTC.
+class AgendaReminder {
+  final String title;
+  final String body;
+  final DateTime at;
+
+  const AgendaReminder({required this.title, required this.body, required this.at});
+}
+
+/// Notifikasi lokal terjadwal: pengingat tiap kegiatan, ringkasan pagi,
+/// ringkasan malam, dan pengingat agenda.
 ///
 /// Penjadwalan dilakukan dalam UTC. Jam jadwal dihitung pada zona waktu pilihan
 /// pengguna lalu dikonversi ke instan UTC, sehingga pengingat tetap jatuh pada
@@ -35,6 +44,7 @@ class NotificationService {
   static const _activityIdBase = 1000;
   static const _morningId = 10;
   static const _nightId = 11;
+  static const _agendaIdBase = 100000;
 
   /// Alarm presis dipakai selama sistem mengizinkan. Pengingat "10 menit
   /// sebelum mulai" kehilangan gunanya kalau digeser Doze berjam-jam, jadi
@@ -102,20 +112,64 @@ class NotificationService {
     return await android?.areNotificationsEnabled() ?? false;
   }
 
-  /// Menjadwal ulang semua notifikasi sesuai template hari ini dan preferensi.
-  /// Dipanggil setiap kali template, zona waktu, atau toggle berubah.
+  // Dua sumber jadwal disimpan terpisah, tapi selalu dijadwalkan ulang
+  // bersama: menjadwal ulang berarti membatalkan semua, jadi menjadwalkan satu
+  // sumber saja akan menghapus pengingat sumber lainnya.
+  _ActivityReminders? _activityConfig;
+  List<AgendaReminder> _agendaReminders = const [];
+  Future<void> _pending = Future.value();
+
+  /// Menjadwal ulang pengingat kegiatan sesuai template hari ini dan
+  /// preferensi. Dipanggil setiap kali template, zona waktu, atau toggle berubah.
   Future<void> reschedule({
     required List<Activity> activities,
     required bool eachActivity,
     required bool morningSummary,
     required bool nightSummary,
     required int minutesBefore,
-  }) async {
-    if (!isSupported) return;
+  }) {
+    _activityConfig = _ActivityReminders(activities, eachActivity, morningSummary, nightSummary, minutesBefore);
+    return _rescheduleAll();
+  }
+
+  /// Mengganti seluruh pengingat agenda. Dipanggil setiap kali agenda, status
+  /// selesainya, atau zona waktu berubah.
+  Future<void> setAgendaReminders(List<AgendaReminder> reminders) {
+    _agendaReminders = reminders;
+    return _rescheduleAll();
+  }
+
+  // Panggilan berurutan, supaya dua penjadwalan ulang yang tumpang tindih tidak
+  // saling membatalkan di tengah jalan. Di platform tanpa notifikasi (test,
+  // desktop) antreannya dilewati sama sekali.
+  Future<void> _rescheduleAll() {
+    if (!isSupported) return Future.value();
+    return _pending = _pending.then((_) => _scheduleEverything()).catchError((Object e) {
+      debugPrint('Gagal menjadwalkan notifikasi: $e');
+    });
+  }
+
+  Future<void> _scheduleEverything() async {
     await init();
     if (!_ready) return;
     _exactAlarms = true;
     await _plugin.cancelAll();
+
+    final nowUtc = DateTime.now().toUtc();
+    for (final (i, r) in _agendaReminders.indexed) {
+      if (!r.at.isAfter(nowUtc)) continue;
+      await _schedule(
+        id: _agendaIdBase + i,
+        title: r.title,
+        body: r.body,
+        at: tz.TZDateTime.from(r.at, tz.UTC),
+        repeatDaily: false,
+      );
+    }
+
+    final config = _activityConfig;
+    if (config == null) return;
+    final _ActivityReminders(:activities, :eachActivity, :morningSummary, :nightSummary, :minutesBefore) = config;
 
     if (eachActivity) {
       for (final a in activities) {
@@ -231,4 +285,14 @@ class NotificationService {
     if (!target.isAfter(nowUtc)) target = target.add(const Duration(days: 1));
     return tz.TZDateTime.from(target, tz.UTC);
   }
+}
+
+class _ActivityReminders {
+  final List<Activity> activities;
+  final bool eachActivity;
+  final bool morningSummary;
+  final bool nightSummary;
+  final int minutesBefore;
+
+  const _ActivityReminders(this.activities, this.eachActivity, this.morningSummary, this.nightSummary, this.minutesBefore);
 }
