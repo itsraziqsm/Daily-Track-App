@@ -25,7 +25,6 @@ import 'package:grou/utils/app_time.dart';
 import 'package:grou/widgets/skip_reason_dialog.dart';
 import 'package:grou/widgets/theme_mode_sheet.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -78,7 +77,7 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
-    await databaseFactory.deleteDatabase(p.join(await getDatabasesPath(), 'jadwal_harian.db'));
+    DatabaseHelper.pathOverride = inMemoryDatabasePath;
     await initializeDateFormatting('id_ID', null);
   });
 

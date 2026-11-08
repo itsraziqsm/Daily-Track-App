@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -17,14 +18,18 @@ class DatabaseHelper {
 
   Database? _db;
 
+  /// Lokasi database pengganti untuk test (mis. [inMemoryDatabasePath]),
+  /// supaya file test yang berjalan paralel tidak berbagi satu berkas.
+  @visibleForTesting
+  static String? pathOverride;
+
   Future<Database> get database async {
     _db ??= await _initDb();
     return _db!;
   }
 
   Future<Database> _initDb() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'jadwal_harian.db');
+    final path = pathOverride ?? join(await getDatabasesPath(), 'jadwal_harian.db');
     return openDatabase(
       path,
       version: 3,
@@ -163,27 +168,42 @@ class DatabaseHelper {
   Future<int> createTemplate(String name, List<Activity> activities) async {
     final db = await database;
     final id = await db.insert('templates', {'name': name});
-    await _writeActivities(db, id, activities);
+    // Template baru selalu mendapat baris kegiatan baru.
+    await _writeActivities(db, id, [for (final a in activities) a.copyWith(id: 0)]);
     return id;
   }
 
-  /// Menyimpan nama dan seluruh isi template. Kegiatan ditulis ulang, jadi
-  /// kegiatan yang dihapus di editor ikut hilang di sini.
+  /// Menyimpan nama dan seluruh isi template. Kegiatan yang sudah ada
+  /// diperbarui di tempat supaya id-nya tetap — log harian menunjuk ke id itu,
+  /// jadi menulis ulang semuanya akan memutus log lama dari kegiatannya.
+  /// Kegiatan baru (id 0) ditambahkan, yang dihapus di editor ikut dihapus.
   Future<void> updateTemplate(int templateId, String name, List<Activity> activities) async {
     final db = await database;
-    await db.update('templates', {'name': name}, where: 'id = ?', whereArgs: [templateId]);
-    await db.delete('template_activities', where: 'templateId = ?', whereArgs: [templateId]);
-    await _writeActivities(db, templateId, activities);
+    await db.transaction((txn) async {
+      await txn.update('templates', {'name': name}, where: 'id = ?', whereArgs: [templateId]);
+      final kept = [for (final a in activities) if (a.id > 0) a.id];
+      await txn.delete(
+        'template_activities',
+        where: kept.isEmpty ? 'templateId = ?' : 'templateId = ? AND id NOT IN (${List.filled(kept.length, '?').join(', ')})',
+        whereArgs: [templateId, ...kept],
+      );
+      await _writeActivities(txn, templateId, activities);
+    });
   }
 
-  Future<void> _writeActivities(Database db, int templateId, List<Activity> activities) async {
+  Future<void> _writeActivities(DatabaseExecutor db, int templateId, List<Activity> activities) async {
     final batch = db.batch();
     for (var i = 0; i < activities.length; i++) {
-      final map = activities[i].toMap()
+      final a = activities[i];
+      final map = a.toMap()
         ..remove('id')
         ..['templateId'] = templateId
         ..['sortOrder'] = i;
-      batch.insert('template_activities', map);
+      if (a.id > 0) {
+        batch.update('template_activities', map, where: 'id = ? AND templateId = ?', whereArgs: [a.id, templateId]);
+      } else {
+        batch.insert('template_activities', map);
+      }
     }
     await batch.commit(noResult: true);
   }
