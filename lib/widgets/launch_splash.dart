@@ -55,44 +55,47 @@ class _LaunchSplashState extends State<LaunchSplash> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    if (_done) return widget.child;
-
     final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
     final colors = dark ? AppColors.dark : AppColors.light;
 
+    // Stack tetap dipakai setelah animasi selesai; hanya lapisannya yang
+    // dilepas. Mengembalikan [child] langsung akan mengubah posisinya di
+    // pohon widget, sehingga aplikasi di bawahnya dibangun ulang dari awal
+    // (initState berjalan lagi dan data dimuat dua kali).
     return Stack(
       fit: StackFit.expand,
       children: [
         widget.child,
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, logo) {
-            final v = _controller.value;
-            final lift = Curves.easeOutBack.transform(_lift.transform(v));
-            final exit = _exit.transform(v);
-            return IgnorePointer(
-              ignoring: exit > 0,
-              child: Opacity(
-                opacity: 1 - exit,
-                child: ColoredBox(
-                  color: colors.bg,
-                  child: Center(
-                    child: Transform.translate(
-                      offset: Offset(0, -10 * lift),
-                      child: Transform.scale(scale: 1 + 0.04 * lift + 0.08 * exit, child: logo),
+        if (!_done)
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, logo) {
+              final v = _controller.value;
+              final lift = Curves.easeOutBack.transform(_lift.transform(v));
+              final exit = _exit.transform(v);
+              return IgnorePointer(
+                ignoring: exit > 0,
+                child: Opacity(
+                  opacity: 1 - exit,
+                  child: ColoredBox(
+                    color: colors.bg,
+                    child: Center(
+                      child: Transform.translate(
+                        offset: Offset(0, -10 * lift),
+                        child: Transform.scale(scale: 1 + 0.04 * lift + 0.08 * exit, child: logo),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-          child: Image.asset(
-            dark ? 'assets/branding/logo_dark.png' : 'assets/branding/logo.png',
-            width: LaunchSplash.logoSize,
-            height: LaunchSplash.logoSize,
-            semanticLabel: 'GroU',
+              );
+            },
+            child: Image.asset(
+              dark ? 'assets/branding/logo_dark.png' : 'assets/branding/logo.png',
+              width: LaunchSplash.logoSize,
+              height: LaunchSplash.logoSize,
+              semanticLabel: 'GroU',
+            ),
           ),
-        ),
       ],
     );
   }

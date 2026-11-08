@@ -20,4 +20,31 @@ void main() {
       expect(find.text('isi aplikasi'), findsOneWidget);
     });
   }
+
+  testWidgets('aplikasi di bawahnya tidak dibangun ulang saat layar pembuka selesai', (tester) async {
+    _CountsInit.inits = 0;
+    await tester.pumpWidget(const MaterialApp(home: LaunchSplash(child: _CountsInit())));
+    await tester.pumpAndSettle();
+    expect(find.byType(Image), findsNothing);
+    expect(_CountsInit.inits, 1, reason: 'initState hanya sekali, jadi data tidak dimuat dua kali');
+  });
+}
+
+class _CountsInit extends StatefulWidget {
+  static int inits = 0;
+  const _CountsInit();
+
+  @override
+  State<_CountsInit> createState() => _CountsInitState();
+}
+
+class _CountsInitState extends State<_CountsInit> {
+  @override
+  void initState() {
+    super.initState();
+    _CountsInit.inits++;
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('isi aplikasi');
 }
