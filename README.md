@@ -42,8 +42,9 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Animasi centang** — cincin menyapu melingkar, lingkaran terisi, lalu centang digambar
   (`lib/widgets/animated_check_circle.dart`). Irama dan proporsinya diambil dari aset animasi
   yang disediakan, tapi digambar sebagai vektor agar transparan, tajam, dan ikut warna palet.
-- **Data lokal** — sqflite dengan skema v4: `daily_logs`, `app_settings`, `templates`,
-  `template_activities`, `day_assignments`, `agenda_items`, `agenda_occurrences`. Migrasi dari
+- **Data lokal** — sqflite dengan skema v5: `daily_logs`, `app_settings`, `templates`,
+  `template_activities`, `day_assignments`, `agenda_items`, `agenda_occurrences`, `targets`,
+  `target_entries`. Migrasi dari
   skema lama menjaga log yang sudah ada. Menyunting template mempertahankan id kegiatannya, jadi
   log lama tetap menunjuk ke kegiatan yang benar.
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas
@@ -61,7 +62,17 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
     sudah selesai tidak diingatkan.
   - Titik status riwayat (sempurna / terlambat / batal) tidak lagi tampil di sini, tapi tetap
     tersedia di `lib/widgets/history_status.dart` untuk dipakai lagi.
-- **Target** *(in development)* — baru berupa halaman penanda.
+- **Target** — tiga jenis, masing-masing dengan halaman detail:
+  - **Streak**: hari beruntun yang semua kegiatannya selesai (terlambat tetap dihitung, pembatalan
+    memutus), dihitung otomatis dari log. Hari ini yang belum lengkap tidak memutus streak.
+    Detailnya menampilkan rekor terpanjang dan kisi 28 hari terakhir.
+  - **Angka**: catat nilai menuju target, naik atau turun (berat badan 80 → 72 kg, bench press
+    60 → 100 kg). Detailnya berisi grafik garis riwayat dengan garis target; ketuk/geser grafik
+    untuk melihat nilai tiap titik.
+  - **Hitungan**: tambah +1 langsung dari kartu (tahan untuk jumlah lain), total atau direset per
+    minggu/bulan/tahun. Detailnya menampilkan jumlah per periode.
+  - Status **Tercapai / Sesuai jalur / Perlu dikejar / Lewat tenggat** dibandingkan dengan laju
+    yang dibutuhkan menuju tenggat atau akhir periode. Target bisa diarsipkan atau dihapus.
 - **Pengaturan → Lainnya**
   - **Statistik** — ring disiplin mingguan, grafik batang per hari, peringkat alasan pembatalan
     paling sering, dan catatan otomatis (kegiatan yang paling sering dibatalkan).
@@ -88,17 +99,19 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 ```
 lib/
   data/seed_activities.dart      # isi template bawaan (23 kegiatan) + daftar alasan batal
-  models/                        # Activity, Template, DailyLog (done/late/cancelled), AgendaItem
+  models/                        # Activity, Template, DailyLog (done/late/cancelled), AgendaItem, Target
   db/database_helper.dart        # akses sqflite
   providers/schedule_provider.dart   # state management (Provider/ChangeNotifier), statistik & kalender
   providers/agenda_provider.dart     # agenda, status selesai per tanggal, pengingat agenda
+  providers/target_provider.dart     # target, catatan, progres & status laju
   screens/
     shell_screen.dart            # app bar + bottom nav 4 tab (swipe antar halaman)
     manage_templates_screen.dart # daftar template + penugasan per hari
     template_editor_screen.dart  # sunting/buat template
     home_tab.dart                # Hari Ini
     agenda_tab.dart              # Agenda: kalender + daftar agenda per tanggal
-    target_tab.dart              # Target (in development)
+    target_tab.dart              # Target: daftar target aktif & arsip
+    target_detail_screen.dart    # detail target: grafik / per periode / kisi streak + catatan
     stats_screen.dart            # Pengaturan → Lainnya → Statistik
     cancellation_log_screen.dart # Pengaturan → Lainnya → Log pembatalan
     settings_tab.dart            # Pengaturan

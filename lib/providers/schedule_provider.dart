@@ -331,6 +331,46 @@ class ScheduleProvider extends ChangeNotifier {
     return streak;
   }
 
+  /// Hari "lengkap" untuk target streak: semua kegiatan hari itu tercatat
+  /// selesai — terlambat tetap dihitung — dan tidak ada yang dibatalkan.
+  /// Lebih longgar dari hari sempurna di atas.
+  bool isCompletedDay(DateTime day, [Map<String, List<DailyLog>>? byDate]) {
+    final logs = (byDate ?? logsByDate)[AppTime.dateKey(day)];
+    final expected = _expectedCountFor(day);
+    if (logs == null || expected == 0) return false;
+    return logs.every((l) => l.status != LogStatus.cancelled) && logs.length >= expected;
+  }
+
+  /// Hari lengkap berturut-turut sampai hari ini. Hari ini ikut dihitung bila
+  /// sudah lengkap; bila belum, streak berakhir kemarin dan belum dianggap
+  /// putus karena harinya masih berjalan.
+  int get completedStreak {
+    final byDate = logsByDate;
+    var day = AppTime.now();
+    if (!isCompletedDay(day, byDate)) day = day.subtract(const Duration(days: 1));
+    var streak = 0;
+    while (isCompletedDay(day, byDate)) {
+      streak++;
+      day = day.subtract(const Duration(days: 1));
+    }
+    return streak;
+  }
+
+  /// Streak hari lengkap terpanjang sepanjang riwayat log.
+  int get bestCompletedStreak {
+    final byDate = logsByDate;
+    if (byDate.isEmpty) return 0;
+    final first = DateTime.parse((byDate.keys.toList()..sort()).first);
+    final now = AppTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    var best = 0, run = 0;
+    for (var day = first; !day.isAfter(today); day = DateTime(day.year, day.month, day.day + 1)) {
+      run = isCompletedDay(day, byDate) ? run + 1 : 0;
+      if (run > best) best = run;
+    }
+    return best;
+  }
+
   /// Persentase kegiatan selesai (termasuk terlambat) untuk 7 hari terakhir termasuk hari ini.
   List<MapEntry<DateTime, double>> get last7DaysCompletion {
     final byDate = logsByDate;

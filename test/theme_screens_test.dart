@@ -13,7 +13,9 @@ import 'package:grou/data/seed_activities.dart';
 import 'package:grou/db/database_helper.dart';
 import 'package:grou/models/agenda_item.dart';
 import 'package:grou/models/daily_log.dart';
+import 'package:grou/models/target.dart';
 import 'package:grou/providers/agenda_provider.dart';
+import 'package:grou/providers/target_provider.dart';
 import 'package:grou/providers/schedule_provider.dart';
 import 'package:grou/screens/cancellation_log_screen.dart';
 import 'package:grou/screens/manage_templates_screen.dart';
@@ -21,6 +23,8 @@ import 'package:grou/screens/notification_feed_screen.dart';
 import 'package:grou/screens/settings_tab.dart';
 import 'package:grou/screens/shell_screen.dart';
 import 'package:grou/screens/stats_screen.dart';
+import 'package:grou/screens/target_detail_screen.dart';
+import 'package:grou/widgets/target_sheets.dart';
 import 'package:grou/screens/template_editor_screen.dart';
 import 'package:grou/theme/app_theme.dart';
 import 'package:grou/utils/app_time.dart';
@@ -99,9 +103,39 @@ Future<void> _seedAgenda(AgendaProvider agenda) async {
   await agenda.toggleDone(agenda.items.firstWhere((i) => i.title == 'Gym'), today);
 }
 
+/// Target contoh: streak, angka (berat badan dengan riwayat beberapa minggu),
+/// dan dua hitungan (mingguan dan per tahun).
+Future<void> _seedTargets(TargetProvider targets) async {
+  final now = AppTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  await targets.save(Target(kind: TargetKind.streak, title: 'Konsisten 2 minggu', targetValue: 14, createdAt: today));
+  await targets.save(Target(
+    kind: TargetKind.value,
+    title: 'Berat badan',
+    unit: 'kg',
+    startValue: 80,
+    targetValue: 72,
+    deadline: today.add(const Duration(days: 60)),
+    createdAt: today.subtract(const Duration(days: 42)),
+  ));
+  await targets.save(Target(kind: TargetKind.count, title: 'Gym', unit: 'sesi', targetValue: 3, period: TargetPeriod.week, createdAt: today.subtract(const Duration(days: 30))));
+  await targets.save(Target(kind: TargetKind.count, title: 'Baca buku', unit: 'buku', targetValue: 12, period: TargetPeriod.year, createdAt: today.subtract(const Duration(days: 90))));
+  final [_, weight, gym, books] = targets.active;
+  for (final (i, kg) in [79.2, 78.1, 78.4, 76.9, 76.2, 75.4].indexed) {
+    await targets.addEntry(TargetEntry(targetId: weight.id, date: today.subtract(Duration(days: 35 - i * 7)), value: kg, note: i == 5 ? 'Pagi, sebelum sarapan' : null));
+  }
+  for (var d = 1; d < 30; d += 3) {
+    await targets.addEntry(TargetEntry(targetId: gym.id, date: today.subtract(Duration(days: d)), value: 1));
+  }
+  for (final (i, title) in ['Atomic Habits', 'Laskar Pelangi', 'Deep Work'].indexed) {
+    await targets.addEntry(TargetEntry(targetId: books.id, date: today.subtract(Duration(days: 60 - i * 25)), value: 1, note: title));
+  }
+}
+
 void main() {
   late ScheduleProvider provider;
   late AgendaProvider agenda;
+  late TargetProvider targets;
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -125,7 +159,11 @@ void main() {
         agenda = AgendaProvider();
         await agenda.load();
         if (agenda.items.isEmpty) await _seedAgenda(agenda);
+        targets = TargetProvider()..schedule = provider;
+        await targets.load();
+        if (targets.active.isEmpty) await _seedTargets(targets);
       });
+      addTearDown(targets.dispose);
       addTearDown(provider.dispose);
       addTearDown(agenda.dispose);
 
@@ -135,6 +173,7 @@ void main() {
           providers: [
             ChangeNotifierProvider.value(value: provider),
             ChangeNotifierProvider.value(value: agenda),
+            ChangeNotifierProvider.value(value: targets),
           ],
           child: MaterialApp(
             navigatorKey: navigatorKey,
@@ -180,10 +219,28 @@ void main() {
       navigatorKey.currentState!.pop();
       await tester.pumpAndSettle();
 
-      for (final (i, tab) in ['Target', 'Pengaturan'].indexed) {
-        await tester.tap(find.byTooltip(tab));
-        await shot('${i + 3}_${tab.toLowerCase()}');
+      await tester.tap(find.byTooltip('Target'));
+      await shot('3_target');
+      expect(find.text('Berat badan'), findsOneWidget);
+      for (final (name, title) in [('3b_detail_angka', 'Berat badan'), ('3c_detail_hitungan', 'Gym'), ('3d_detail_streak', 'Konsisten 2 minggu')]) {
+        await tester.ensureVisible(find.text(title));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(title));
+        await shot(name);
+        expect(find.byType(TargetDetailScreen), findsOneWidget);
+        navigatorKey.currentState!.pop();
+        await tester.pumpAndSettle();
       }
+      showTargetSheet(navigatorKey.currentContext!);
+      await shot('3e_sheet_target_baru');
+      navigatorKey.currentState!.pop();
+      showTargetEntrySheet(navigatorKey.currentContext!, targets.active.firstWhere((t) => t.title == 'Berat badan'));
+      await shot('3f_sheet_catat');
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Pengaturan'));
+      await shot('4_pengaturan');
 
       // Toleransi terlambat bisa diubah dari Pengaturan dan langsung berlaku.
       final settingsList = find.descendant(of: find.byType(SettingsTab), matching: find.byType(Scrollable)).first;

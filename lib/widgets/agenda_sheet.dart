@@ -6,6 +6,7 @@ import '../models/activity.dart';
 import '../models/agenda_item.dart';
 import '../providers/agenda_provider.dart';
 import '../theme/app_theme.dart';
+import 'sheet_parts.dart';
 
 const _weekdayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
@@ -148,33 +149,13 @@ class _AgendaSheetState extends State<_AgendaSheet> {
   Future<void> _delete() async {
     final agenda = context.read<AgendaProvider>();
     final item = _original!;
-    final c = AppColors.of(context);
-    final choice = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Hapus agenda ini?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.ink)),
-        content: Text(
-          item.isRepeating
-              ? '"${item.title}" berulang ${item.repeatLabel.toLowerCase()}. Hapus hanya untuk ${DateFormat('d MMMM', 'id_ID').format(widget.day)}, atau semua jadwalnya?'
-              : '"${item.title}" akan dihapus.',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.inkMuted3, height: 1.45),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Batal', style: TextStyle(color: c.inkMuted, fontWeight: FontWeight.w700)),
-          ),
-          if (item.isRepeating)
-            TextButton(
-              onPressed: () => Navigator.of(context).pop('once'),
-              child: Text('Tanggal ini', style: TextStyle(color: c.orangeChipInk, fontWeight: FontWeight.w800)),
-            ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop('all'),
-            child: Text(item.isRepeating ? 'Semua' : 'Hapus', style: TextStyle(color: c.orangeChipInk, fontWeight: FontWeight.w800)),
-          ),
-        ],
-      ),
+    final choice = await showConfirmDialog(
+      context,
+      title: 'Hapus agenda ini?',
+      message: item.isRepeating
+          ? '"${item.title}" berulang ${item.repeatLabel.toLowerCase()}. Hapus hanya untuk ${DateFormat('d MMMM', 'id_ID').format(widget.day)}, atau semua jadwalnya?'
+          : '"${item.title}" akan dihapus.',
+      actions: item.isRepeating ? const {'once': 'Tanggal ini', 'all': 'Semua'} : const {'all': 'Hapus'},
     );
     if (choice == null) return;
     if (choice == 'once') {
@@ -191,266 +172,115 @@ class _AgendaSheetState extends State<_AgendaSheet> {
     final reminders = _allDay ? _allDayReminders : _timedReminders;
     final dateLabel = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_date);
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
-        decoration: BoxDecoration(
-          color: c.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+    return SheetScaffold(
+      children: [
+        SheetTitle(
+          _isNew ? 'Agenda baru' : 'Edit agenda',
+          subtitle: !_isNew && _original!.isRepeating ? 'Perubahan berlaku untuk semua tanggal agenda ini.' : null,
         ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(color: c.lineSoft, borderRadius: BorderRadius.circular(99)),
-                  ),
-                ),
-                Text(
-                  _isNew ? 'Agenda baru' : 'Edit agenda',
-                  style: TextStyle(fontFamily: AppFonts.title, fontSize: 18, fontWeight: FontWeight.w800, color: c.ink, letterSpacing: -0.4),
-                ),
-                if (!_isNew && _original!.isRepeating) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Perubahan berlaku untuk semua tanggal agenda ini.',
-                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w600, color: c.inkMuted),
-                  ),
-                ],
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _title,
-                  autofocus: _isNew,
-                  onChanged: (_) => setState(() {}),
-                  decoration: _inputDecoration(c, 'Judul agenda'),
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.ink),
-                ),
-                const SizedBox(height: 9),
-                TextField(
-                  controller: _note,
-                  minLines: 1,
-                  maxLines: 3,
-                  decoration: _inputDecoration(c, 'Catatan (opsional)'),
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink),
-                ),
-                const SizedBox(height: 16),
-                const _Label('TANGGAL'),
-                _FieldBox(label: _repeat == AgendaRepeat.none ? 'Tanggal' : 'Mulai', value: dateLabel, onTap: () => _pickDate(until: false)),
-                const SizedBox(height: 16),
-                const _Label('WAKTU'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _Chip(label: 'Seharian', selected: _allDay, onTap: () => _setAllDay(true)),
-                    _Chip(label: 'Atur jam', selected: !_allDay, onTap: () => _setAllDay(false)),
-                  ],
-                ),
-                if (!_allDay) ...[
-                  const SizedBox(height: 9),
-                  Row(
-                    children: [
-                      Expanded(child: _FieldBox(label: 'Mulai', value: _start, onTap: () => _pickTime(true))),
-                      const SizedBox(width: 10),
-                      Expanded(child: _FieldBox(label: 'Selesai', value: _end, onTap: () => _pickTime(false))),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 16),
-                const _Label('ULANGI'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final r in AgendaRepeat.values) _Chip(label: r.label, selected: _repeat == r, onTap: () => _setRepeat(r)),
-                  ],
-                ),
-                if (_repeat == AgendaRepeat.weekly) ...[
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      for (var d = 1; d <= 7; d++) ...[
-                        Expanded(
-                          child: _Chip(
-                            label: _weekdayLabels[d - 1],
-                            selected: _repeatDays.contains(d),
-                            compact: true,
-                            onTap: () => setState(() => _repeatDays.contains(d) ? _repeatDays.remove(d) : _repeatDays.add(d)),
-                          ),
-                        ),
-                        if (d < 7) const SizedBox(width: 5),
-                      ],
-                    ],
-                  ),
-                ],
-                if (_repeat != AgendaRepeat.none) ...[
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      _Chip(label: 'Tanpa akhir', selected: _until == null, onTap: () => setState(() => _until = null)),
-                      _Chip(
-                        label: _until == null ? 'Sampai tanggal…' : 'Sampai ${DateFormat('d MMM yyyy', 'id_ID').format(_until!)}',
-                        selected: _until != null,
-                        onTap: () => _pickDate(until: true),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 16),
-                const _Label('PENGINGAT'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _Chip(label: 'Tanpa', selected: _reminder == null, onTap: () => setState(() => _reminder = null)),
-                    for (final e in reminders.entries)
-                      _Chip(label: e.value, selected: _reminder == e.key, onTap: () => setState(() => _reminder = e.key)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                GestureDetector(
-                  onTap: _canSave ? _save : null,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: _canSave ? c.orange : c.lineSoft2,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      _canSave ? 'Simpan agenda' : (_title.text.trim().isEmpty ? 'Isi judul agenda' : 'Pilih hari pengulangan'),
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _canSave ? Colors.white : c.inkMuted2),
-                    ),
-                  ),
-                ),
-                if (!_isNew) ...[
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: _delete,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: c.line, width: 1.5),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text('Hapus agenda', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.orangeChipInk)),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _title,
+          autofocus: _isNew,
+          onChanged: (_) => setState(() {}),
+          decoration: sheetInputDecoration(c, 'Judul agenda'),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.ink),
         ),
-      ),
-    );
-  }
-
-  static InputDecoration _inputDecoration(AppColors c, String hint) {
-    OutlineInputBorder border(Color color) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: color, width: 1.5),
-        );
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: c.card,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-      border: border(c.line),
-      enabledBorder: border(c.line),
-      focusedBorder: border(c.ink),
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  final String text;
-  const _Label(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-      child: Text(text, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
-    );
-  }
-}
-
-class _FieldBox extends StatelessWidget {
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-
-  const _FieldBox({required this.label, required this.value, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: c.card,
-          border: Border.all(color: c.line, width: 1.5),
-          borderRadius: BorderRadius.circular(15),
+        const SizedBox(height: 9),
+        TextField(
+          controller: _note,
+          minLines: 1,
+          maxLines: 3,
+          decoration: sheetInputDecoration(c, 'Catatan (opsional)'),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        const SizedBox(height: 16),
+        const SheetLabel('TANGGAL'),
+        SheetFieldBox(label: _repeat == AgendaRepeat.none ? 'Tanggal' : 'Mulai', value: dateLabel, onTap: () => _pickDate(until: false)),
+        const SizedBox(height: 16),
+        const SheetLabel('WAKTU'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            Text(label, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, color: c.inkMuted)),
-            const SizedBox(height: 2),
-            Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c.ink)),
+            SheetChip(label: 'Seharian', selected: _allDay, onTap: () => _setAllDay(true)),
+            SheetChip(label: 'Atur jam', selected: !_allDay, onTap: () => _setAllDay(false)),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final bool compact;
-  final VoidCallback onTap;
-
-  const _Chip({required this.label, required this.selected, required this.onTap, this.compact = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 13, vertical: 9),
-        alignment: compact ? Alignment.center : null,
-        decoration: BoxDecoration(
-          color: selected ? c.orangeChipBg : c.card,
-          border: Border.all(color: selected ? c.orange : c.line, width: 1.5),
-          borderRadius: BorderRadius.circular(12),
+        if (!_allDay) ...[
+          const SizedBox(height: 9),
+          Row(
+            children: [
+              Expanded(child: SheetFieldBox(label: 'Mulai', value: _start, onTap: () => _pickTime(true))),
+              const SizedBox(width: 10),
+              Expanded(child: SheetFieldBox(label: 'Selesai', value: _end, onTap: () => _pickTime(false))),
+            ],
+          ),
+        ],
+        const SizedBox(height: 16),
+        const SheetLabel('ULANGI'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final r in AgendaRepeat.values) SheetChip(label: r.label, selected: _repeat == r, onTap: () => _setRepeat(r)),
+          ],
         ),
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? c.orangeChipInk : c.inkMuted3),
+        if (_repeat == AgendaRepeat.weekly) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              for (var d = 1; d <= 7; d++) ...[
+                Expanded(
+                  child: SheetChip(
+                    label: _weekdayLabels[d - 1],
+                    selected: _repeatDays.contains(d),
+                    compact: true,
+                    onTap: () => setState(() => _repeatDays.contains(d) ? _repeatDays.remove(d) : _repeatDays.add(d)),
+                  ),
+                ),
+                if (d < 7) const SizedBox(width: 5),
+              ],
+            ],
+          ),
+        ],
+        if (_repeat != AgendaRepeat.none) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              SheetChip(label: 'Tanpa akhir', selected: _until == null, onTap: () => setState(() => _until = null)),
+              SheetChip(
+                label: _until == null ? 'Sampai tanggal…' : 'Sampai ${DateFormat('d MMM yyyy', 'id_ID').format(_until!)}',
+                selected: _until != null,
+                onTap: () => _pickDate(until: true),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 16),
+        const SheetLabel('PENGINGAT'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            SheetChip(label: 'Tanpa', selected: _reminder == null, onTap: () => setState(() => _reminder = null)),
+            for (final e in reminders.entries)
+              SheetChip(label: e.value, selected: _reminder == e.key, onTap: () => setState(() => _reminder = e.key)),
+          ],
         ),
-      ),
+        const SizedBox(height: 20),
+        SheetPrimaryButton(
+          label: 'Simpan agenda',
+          disabledLabel: _title.text.trim().isEmpty ? 'Isi judul agenda' : 'Pilih hari pengulangan',
+          onTap: _canSave ? _save : null,
+        ),
+        if (!_isNew) ...[
+          const SizedBox(height: 10),
+          SheetSecondaryButton(label: 'Hapus agenda', destructive: true, onTap: _delete),
+        ],
+      ],
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'providers/agenda_provider.dart';
 import 'providers/schedule_provider.dart';
+import 'providers/target_provider.dart';
 import 'screens/shell_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
@@ -32,6 +33,11 @@ class GroUApp extends StatelessWidget {
         ChangeNotifierProxyProvider<ScheduleProvider, AgendaProvider>(
           create: (_) => AgendaProvider(),
           update: (_, schedule, agenda) => agenda!..onTimeZone(schedule.timeZone),
+        ),
+        // Target streak dihitung dari log harian milik ScheduleProvider.
+        ChangeNotifierProxyProvider<ScheduleProvider, TargetProvider>(
+          create: (_) => TargetProvider(),
+          update: (_, schedule, targets) => targets!..schedule = schedule,
         ),
       ],
       child: Selector<ScheduleProvider, ThemeMode>(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/agenda_provider.dart';
 import '../providers/schedule_provider.dart';
+import '../providers/target_provider.dart';
 import '../theme/app_theme.dart';
 import 'agenda_tab.dart';
 import 'home_tab.dart';
@@ -36,6 +37,7 @@ class _ShellScreenState extends State<ShellScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ScheduleProvider>().load();
       context.read<AgendaProvider>().load();
+      context.read<TargetProvider>().load();
     });
   }
 

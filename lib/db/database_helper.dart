@@ -6,6 +6,7 @@ import '../data/seed_activities.dart';
 import '../models/activity.dart';
 import '../models/agenda_item.dart';
 import '../models/daily_log.dart';
+import '../models/target.dart';
 import '../models/template.dart';
 
 /// Penyimpanan lokal (sqflite): catatan harian, template kegiatan beserta
@@ -33,7 +34,7 @@ class DatabaseHelper {
     final path = pathOverride ?? join(await getDatabasesPath(), 'jadwal_harian.db');
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute(_createLogs);
         await db.execute(_createSettings);
@@ -42,6 +43,8 @@ class DatabaseHelper {
         await db.execute(_createDayAssignments);
         await db.execute(_createAgendaItems);
         await db.execute(_createAgendaOccurrences);
+        await db.execute(_createTargets);
+        await db.execute(_createTargetEntries);
         await _seedDefaultTemplate(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
@@ -57,6 +60,10 @@ class DatabaseHelper {
         if (oldVersion < 4) {
           await db.execute(_createAgendaItems);
           await db.execute(_createAgendaOccurrences);
+        }
+        if (oldVersion < 5) {
+          await db.execute(_createTargets);
+          await db.execute(_createTargetEntries);
         }
       },
     );
@@ -131,6 +138,31 @@ class DatabaseHelper {
       date TEXT NOT NULL,
       state TEXT NOT NULL,
       PRIMARY KEY (itemId, date)
+    )
+  ''';
+
+  static const _createTargets = '''
+    CREATE TABLE targets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      kind TEXT NOT NULL,
+      title TEXT NOT NULL,
+      unit TEXT,
+      startValue REAL,
+      targetValue REAL NOT NULL,
+      period TEXT NOT NULL,
+      deadline TEXT,
+      createdAt TEXT NOT NULL,
+      archived INTEGER NOT NULL DEFAULT 0
+    )
+  ''';
+
+  static const _createTargetEntries = '''
+    CREATE TABLE target_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      targetId INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      value REAL NOT NULL,
+      note TEXT
     )
   ''';
 
@@ -346,5 +378,46 @@ class DatabaseHelper {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
+  }
+
+  // ---- Target ----
+
+  Future<List<Target>> allTargets() async {
+    final db = await database;
+    final rows = await db.query('targets', orderBy: 'id');
+    return rows.map(Target.fromMap).toList();
+  }
+
+  Future<int> saveTarget(Target target) async {
+    final db = await database;
+    final map = target.toMap()..remove('id');
+    if (target.id == 0) return db.insert('targets', map);
+    await db.update('targets', map, where: 'id = ?', whereArgs: [target.id]);
+    return target.id;
+  }
+
+  Future<void> deleteTarget(int id) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('target_entries', where: 'targetId = ?', whereArgs: [id]);
+      await txn.delete('targets', where: 'id = ?', whereArgs: [id]);
+    });
+  }
+
+  /// Semua catatan, urut tanggal lalu urutan pencatatan.
+  Future<List<TargetEntry>> allTargetEntries() async {
+    final db = await database;
+    final rows = await db.query('target_entries', orderBy: 'date, id');
+    return rows.map(TargetEntry.fromMap).toList();
+  }
+
+  Future<int> addTargetEntry(TargetEntry entry) async {
+    final db = await database;
+    return db.insert('target_entries', entry.toMap()..remove('id'));
+  }
+
+  Future<void> deleteTargetEntry(int id) async {
+    final db = await database;
+    await db.delete('target_entries', where: 'id = ?', whereArgs: [id]);
   }
 }
