@@ -42,7 +42,7 @@ void main() {
     expect(find.bySemanticsLabel('GroU'), findsNothing, reason: 'layar pembuka sudah memudar');
     expect(find.text('Hari Ini'), findsOneWidget);
     expect(find.text('Bangun tidur & membasuh diri'), findsOneWidget, reason: 'template bawaan termuat');
-    for (final tab in ['Agenda', 'Target', 'Pengaturan']) {
+    for (final tab in ['Agenda', 'Target', 'Keuangan', 'Pengaturan']) {
       expect(find.byTooltip(tab), findsOneWidget);
     }
 

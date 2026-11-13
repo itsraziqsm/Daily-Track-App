@@ -20,7 +20,7 @@ import 'package:grou/providers/schedule_provider.dart';
 import 'package:grou/screens/cancellation_log_screen.dart';
 import 'package:grou/screens/manage_templates_screen.dart';
 import 'package:grou/screens/notification_feed_screen.dart';
-import 'package:grou/screens/settings_tab.dart';
+import 'package:grou/screens/settings_screen.dart';
 import 'package:grou/screens/shell_screen.dart';
 import 'package:grou/screens/stats_screen.dart';
 import 'package:grou/screens/target_detail_screen.dart';
@@ -239,11 +239,16 @@ void main() {
       navigatorKey.currentState!.pop();
       await tester.pumpAndSettle();
 
+      await tester.tap(find.byTooltip('Keuangan'));
+      await shot('4_keuangan');
+
+      // Pengaturan dibuka dari tombol profil di app bar.
       await tester.tap(find.byTooltip('Pengaturan'));
-      await shot('4_pengaturan');
+      await shot('4b_pengaturan');
+      expect(find.byType(SettingsScreen), findsOneWidget);
 
       // Toleransi terlambat bisa diubah dari Pengaturan dan langsung berlaku.
-      final settingsList = find.descendant(of: find.byType(SettingsTab), matching: find.byType(Scrollable)).first;
+      final settingsList = find.descendant(of: find.byType(SettingsScreen), matching: find.byType(Scrollable)).first;
       await tester.tap(find.text('Toleransi terlambat'));
       await shot('5_sheet_toleransi');
       await tester.tap(find.text('45 mnt'));

@@ -13,10 +13,11 @@ import 'cancellation_log_screen.dart';
 import 'manage_templates_screen.dart';
 import 'stats_screen.dart';
 
-/// Tab "Pengaturan" — template yang aktif hari ini, pintu masuk ke Kelola
-/// Template, aturan pelacakan, dan preferensi pengingat.
-class SettingsTab extends StatelessWidget {
-  const SettingsTab({super.key});
+/// Layar "Pengaturan", dibuka dari tombol profil di app bar — template yang
+/// aktif hari ini, pintu masuk ke Kelola Template, tampilan, aturan
+/// pelacakan, pengingat, dan menu lainnya.
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,130 +26,135 @@ class SettingsTab extends StatelessWidget {
     final active = provider.activeTemplate;
     final cancelled = provider.cancelledLogs.length;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
-      children: [
-        Text('PREFERENSI', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: c.inkMuted)),
-        const SizedBox(height: 5),
-        Text('Pengaturan', style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: c.ink)),
-        const SizedBox(height: 22),
-        Text('TEMPLATE KEGIATAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
-        const SizedBox(height: 11),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: c.yellowBg,
-            border: Border.all(color: c.yellow, width: 1.5),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: c.orange),
-                child: const Icon(LucideIcons.check, size: 12, color: Colors.white),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      active?.name ?? 'Belum ada template',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: c.yellowInk),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      active == null
-                          ? 'Buat satu lewat Kelola Template'
-                          : 'Aktif hari ini · ${active.activities.length} kegiatan · ${active.rangeLabel}',
-                      style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.yellowInk2),
-                    ),
-                  ],
+    return Scaffold(
+      backgroundColor: c.bg,
+      appBar: AppBar(
+        title: Text(
+          'Pengaturan',
+          style: TextStyle(fontFamily: AppFonts.title, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.4, color: c.ink),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(22, 8, 22, 30),
+        children: [
+          Text('TEMPLATE KEGIATAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+          const SizedBox(height: 11),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: c.yellowBg,
+              border: Border.all(color: c.yellow, width: 1.5),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: c.orange),
+                  child: const Icon(LucideIcons.check, size: 12, color: Colors.white),
                 ),
-              ),
-            ],
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        active?.name ?? 'Belum ada template',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: c.yellowInk),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        active == null
+                            ? 'Buat satu lewat Kelola Template'
+                            : 'Aktif hari ini · ${active.activities.length} kegiatan · ${active.rangeLabel}',
+                        style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.yellowInk2),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 9),
-        _LinkRow(
-          label: 'Kelola Template',
-          sub: '${provider.templates.length} template · atur kegiatan dan hari pemakaiannya',
-          builder: (_) => const ManageTemplatesScreen(),
-        ),
-        const SizedBox(height: 26),
-        Text('TAMPILAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
-        const SizedBox(height: 11),
-        _RuleRow(
-          label: 'Tema',
-          sub: provider.themeMode.description,
-          value: provider.themeMode.label,
-          onTap: () async {
-            final picked = await showThemeModeSheet(context, provider.themeMode);
-            if (picked != null) await provider.setThemeMode(picked);
-          },
-        ),
-        const SizedBox(height: 26),
-        Text('ATURAN PELACAKAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
-        const SizedBox(height: 11),
-        _RuleRow(
-          label: 'Toleransi terlambat',
-          sub: 'Dicentang lebih dari ini setelah rentang usai dihitung terlambat',
-          value: toleranceLabel(provider.toleranceMinutes),
-          onTap: () async {
-            final picked = await showToleranceSheet(context, provider.toleranceMinutes);
-            if (picked != null) await provider.setToleranceMinutes(picked);
-          },
-        ),
-        const SizedBox(height: 9),
-        _RuleRow(
-          label: 'Zona waktu',
-          sub: 'Semua jadwal mengikuti ${provider.timeZone.label}',
-          value: provider.timeZone.code,
-          onTap: () async {
-            final picked = await showTimeZoneSheet(context, provider.timeZone);
-            if (picked != null) await provider.setTimeZone(picked);
-          },
-        ),
-        const SizedBox(height: 26),
-        Text('PENGINGAT', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
-        const SizedBox(height: 11),
-        _ToggleRow(
-          label: 'Notifikasi tiap kegiatan',
-          sub: 'Muncul ${ScheduleProvider.reminderMinutesBefore} menit sebelum jam mulai',
-          value: provider.notificationPrefs['each'] ?? false,
-          onTap: () => _toggle(context, 'each'),
-        ),
-        const SizedBox(height: 10),
-        _ToggleRow(
-          label: 'Ringkasan pagi',
-          sub: 'Setiap hari 06:00 · daftar kegiatan',
-          value: provider.notificationPrefs['morning'] ?? false,
-          onTap: () => _toggle(context, 'morning'),
-        ),
-        const SizedBox(height: 10),
-        _ToggleRow(
-          label: 'Ringkasan malam',
-          sub: 'Setiap hari 21:30 · rekap & pembatalan',
-          value: provider.notificationPrefs['night'] ?? false,
-          onTap: () => _toggle(context, 'night'),
-        ),
-        const SizedBox(height: 26),
-        Text('LAINNYA', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
-        const SizedBox(height: 11),
-        _LinkRow(
-          label: 'Statistik',
-          sub: 'Disiplin mingguan, grafik per hari, alasan tersering',
-          builder: (_) => const StatsScreen(),
-        ),
-        const SizedBox(height: 9),
-        _LinkRow(
-          label: 'Log pembatalan',
-          sub: cancelled == 0 ? 'Belum ada kegiatan yang dibatalkan' : '$cancelled kegiatan dibatalkan · per hari',
-          builder: (_) => const CancellationLogScreen(),
-        ),
-      ],
+          const SizedBox(height: 9),
+          _LinkRow(
+            label: 'Kelola Template',
+            sub: '${provider.templates.length} template · atur kegiatan dan hari pemakaiannya',
+            builder: (_) => const ManageTemplatesScreen(),
+          ),
+          const SizedBox(height: 26),
+          Text('TAMPILAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+          const SizedBox(height: 11),
+          _RuleRow(
+            label: 'Tema',
+            sub: provider.themeMode.description,
+            value: provider.themeMode.label,
+            onTap: () async {
+              final picked = await showThemeModeSheet(context, provider.themeMode);
+              if (picked != null) await provider.setThemeMode(picked);
+            },
+          ),
+          const SizedBox(height: 26),
+          Text('ATURAN PELACAKAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+          const SizedBox(height: 11),
+          _RuleRow(
+            label: 'Toleransi terlambat',
+            sub: 'Dicentang lebih dari ini setelah rentang usai dihitung terlambat',
+            value: toleranceLabel(provider.toleranceMinutes),
+            onTap: () async {
+              final picked = await showToleranceSheet(context, provider.toleranceMinutes);
+              if (picked != null) await provider.setToleranceMinutes(picked);
+            },
+          ),
+          const SizedBox(height: 9),
+          _RuleRow(
+            label: 'Zona waktu',
+            sub: 'Semua jadwal mengikuti ${provider.timeZone.label}',
+            value: provider.timeZone.code,
+            onTap: () async {
+              final picked = await showTimeZoneSheet(context, provider.timeZone);
+              if (picked != null) await provider.setTimeZone(picked);
+            },
+          ),
+          const SizedBox(height: 26),
+          Text('PENGINGAT', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+          const SizedBox(height: 11),
+          _ToggleRow(
+            label: 'Notifikasi tiap kegiatan',
+            sub: 'Muncul ${ScheduleProvider.reminderMinutesBefore} menit sebelum jam mulai',
+            value: provider.notificationPrefs['each'] ?? false,
+            onTap: () => _toggle(context, 'each'),
+          ),
+          const SizedBox(height: 10),
+          _ToggleRow(
+            label: 'Ringkasan pagi',
+            sub: 'Setiap hari 06:00 · daftar kegiatan',
+            value: provider.notificationPrefs['morning'] ?? false,
+            onTap: () => _toggle(context, 'morning'),
+          ),
+          const SizedBox(height: 10),
+          _ToggleRow(
+            label: 'Ringkasan malam',
+            sub: 'Setiap hari 21:30 · rekap & pembatalan',
+            value: provider.notificationPrefs['night'] ?? false,
+            onTap: () => _toggle(context, 'night'),
+          ),
+          const SizedBox(height: 26),
+          Text('LAINNYA', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+          const SizedBox(height: 11),
+          _LinkRow(
+            label: 'Statistik',
+            sub: 'Disiplin mingguan, grafik per hari, alasan tersering',
+            builder: (_) => const StatsScreen(),
+          ),
+          const SizedBox(height: 9),
+          _LinkRow(
+            label: 'Log pembatalan',
+            sub: cancelled == 0 ? 'Belum ada kegiatan yang dibatalkan' : '$cancelled kegiatan dibatalkan · per hari',
+            builder: (_) => const CancellationLogScreen(),
+          ),
+        ],
+      ),
     );
   }
 

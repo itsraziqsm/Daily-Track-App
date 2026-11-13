@@ -7,9 +7,10 @@ import '../providers/schedule_provider.dart';
 import '../providers/target_provider.dart';
 import '../theme/app_theme.dart';
 import 'agenda_tab.dart';
+import 'finance_tab.dart';
 import 'home_tab.dart';
 import 'notification_feed_screen.dart';
-import 'settings_tab.dart';
+import 'settings_screen.dart';
 import 'target_tab.dart';
 
 /// Shell utama aplikasi: app bar + 4 tab bawah, mengikuti struktur navigasi desain.
@@ -28,7 +29,7 @@ class _ShellScreenState extends State<ShellScreen> {
     (icon: LucideIcons.listTodo, tooltip: 'Hari Ini'),
     (icon: LucideIcons.calendarDays, tooltip: 'Agenda'),
     (icon: LucideIcons.target, tooltip: 'Target'),
-    (icon: LucideIcons.settings, tooltip: 'Pengaturan'),
+    (icon: LucideIcons.wallet, tooltip: 'Keuangan'),
   ];
 
   @override
@@ -65,7 +66,7 @@ class _ShellScreenState extends State<ShellScreen> {
         toolbarHeight: 48,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 18),
+            padding: const EdgeInsets.only(right: 4),
             child: GestureDetector(
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const NotificationFeedScreen()),
@@ -92,6 +93,24 @@ class _ShellScreenState extends State<ShellScreen> {
               ),
             ),
           ),
+          // Semua pengaturan dibuka dari sini.
+          Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: Tooltip(
+              message: 'Pengaturan',
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                ),
+                behavior: HitTestBehavior.opaque,
+                child: SizedBox(
+                  width: 38,
+                  height: 38,
+                  child: Icon(LucideIcons.circleUserRound, size: 22, color: c.ink),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
       body: PageView(
@@ -101,7 +120,7 @@ class _ShellScreenState extends State<ShellScreen> {
           _KeepAlive(child: HomeTab()),
           _KeepAlive(child: AgendaTab()),
           _KeepAlive(child: TargetTab()),
-          _KeepAlive(child: SettingsTab()),
+          _KeepAlive(child: FinanceTab()),
         ],
       ),
       bottomNavigationBar: Container(
