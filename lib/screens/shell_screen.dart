@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/agenda_provider.dart';
+import '../providers/finance_provider.dart';
 import '../providers/schedule_provider.dart';
 import '../providers/target_provider.dart';
 import '../theme/app_theme.dart';
@@ -39,6 +40,7 @@ class _ShellScreenState extends State<ShellScreen> {
       context.read<ScheduleProvider>().load();
       context.read<AgendaProvider>().load();
       context.read<TargetProvider>().load();
+      context.read<FinanceProvider>().load();
     });
   }
 

@@ -6,6 +6,7 @@ import '../data/seed_activities.dart';
 import '../models/activity.dart';
 import '../models/agenda_item.dart';
 import '../models/daily_log.dart';
+import '../models/finance.dart';
 import '../models/target.dart';
 import '../models/template.dart';
 
@@ -25,6 +26,14 @@ class DatabaseHelper {
   @visibleForTesting
   static String? pathOverride;
 
+  /// Menutup database supaya pemanggilan berikutnya membuka yang baru; dengan
+  /// [inMemoryDatabasePath] berarti database kosong.
+  @visibleForTesting
+  Future<void> resetForTest() async {
+    await _db?.close();
+    _db = null;
+  }
+
   Future<Database> get database async {
     _db ??= await _initDb();
     return _db!;
@@ -34,7 +43,7 @@ class DatabaseHelper {
     final path = pathOverride ?? join(await getDatabasesPath(), 'jadwal_harian.db');
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, version) async {
         await db.execute(_createLogs);
         await db.execute(_createSettings);
@@ -45,6 +54,7 @@ class DatabaseHelper {
         await db.execute(_createAgendaOccurrences);
         await db.execute(_createTargets);
         await db.execute(_createTargetEntries);
+        await _createFinanceTables(db);
         await _seedDefaultTemplate(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
@@ -65,6 +75,7 @@ class DatabaseHelper {
           await db.execute(_createTargets);
           await db.execute(_createTargetEntries);
         }
+        if (oldVersion < 6) await _createFinanceTables(db);
       },
     );
   }
@@ -165,6 +176,35 @@ class DatabaseHelper {
       note TEXT
     )
   ''';
+
+  static Future<void> _createFinanceTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE salary_changes (
+        fromMonth TEXT PRIMARY KEY,
+        amount REAL NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE finance_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        kind TEXT NOT NULL,
+        date TEXT NOT NULL,
+        amount REAL NOT NULL,
+        category TEXT,
+        note TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE recurring_expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        fromMonth TEXT NOT NULL,
+        untilMonth TEXT
+      )
+    ''');
+  }
 
   Future<void> _seedDefaultTemplate(Database db) async {
     await db.insert('templates', {'id': 1, 'name': defaultTemplateName});
@@ -419,5 +459,60 @@ class DatabaseHelper {
   Future<void> deleteTargetEntry(int id) async {
     final db = await database;
     await db.delete('target_entries', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---- Keuangan ----
+
+  Future<List<SalaryChange>> salaryChanges() async {
+    final db = await database;
+    final rows = await db.query('salary_changes', orderBy: 'fromMonth');
+    return [for (final r in rows) SalaryChange(Month.parse(r['fromMonth'] as String), (r['amount'] as num).toDouble())];
+  }
+
+  /// Mencatat gaji yang berlaku mulai [from]; menimpa perubahan di bulan yang
+  /// sama.
+  Future<void> setSalary(Month from, double amount) async {
+    final db = await database;
+    await db.insert('salary_changes', {'fromMonth': from.key, 'amount': amount}, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<FinanceEntry>> financeEntries() async {
+    final db = await database;
+    final rows = await db.query('finance_entries', orderBy: 'date, id');
+    return rows.map(FinanceEntry.fromMap).toList();
+  }
+
+  Future<int> addFinanceEntry(FinanceEntry entry) async {
+    final db = await database;
+    return db.insert('finance_entries', entry.toMap()..remove('id'));
+  }
+
+  Future<void> updateFinanceEntry(FinanceEntry entry) async {
+    final db = await database;
+    await db.update('finance_entries', entry.toMap()..remove('id'), where: 'id = ?', whereArgs: [entry.id]);
+  }
+
+  Future<void> deleteFinanceEntry(int id) async {
+    final db = await database;
+    await db.delete('finance_entries', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<RecurringExpense>> recurringExpenses() async {
+    final db = await database;
+    final rows = await db.query('recurring_expenses', orderBy: 'fromMonth, id');
+    return rows.map(RecurringExpense.fromMap).toList();
+  }
+
+  Future<int> saveRecurringExpense(RecurringExpense e) async {
+    final db = await database;
+    final map = e.toMap()..remove('id');
+    if (e.id == 0) return db.insert('recurring_expenses', map);
+    await db.update('recurring_expenses', map, where: 'id = ?', whereArgs: [e.id]);
+    return e.id;
+  }
+
+  Future<void> deleteRecurringExpense(int id) async {
+    final db = await database;
+    await db.delete('recurring_expenses', where: 'id = ?', whereArgs: [id]);
   }
 }

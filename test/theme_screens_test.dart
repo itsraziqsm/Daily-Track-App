@@ -13,6 +13,10 @@ import 'package:grou/data/seed_activities.dart';
 import 'package:grou/db/database_helper.dart';
 import 'package:grou/models/agenda_item.dart';
 import 'package:grou/models/daily_log.dart';
+import 'package:grou/models/finance.dart';
+import 'package:grou/providers/finance_provider.dart';
+import 'package:grou/screens/finance_tab.dart';
+import 'package:grou/widgets/finance_sheets.dart';
 import 'package:grou/models/target.dart';
 import 'package:grou/providers/agenda_provider.dart';
 import 'package:grou/providers/target_provider.dart';
@@ -132,8 +136,39 @@ Future<void> _seedTargets(TargetProvider targets) async {
   }
 }
 
+/// Data keuangan contoh: gaji dan pengeluaran tetap sejak tiga bulan lalu,
+/// transaksi tiap bulan, dan pemasukan tambahan bulan ini.
+Future<void> _seedFinance(FinanceProvider finance) async {
+  final db = DatabaseHelper.instance;
+  final now = finance.currentMonth;
+  final start = now.plus(-3);
+  await db.setSalary(start, 6500000);
+  await db.setSetting('savings.opening', '12000000');
+  await db.setSetting('savings.openingMonth', start.key);
+  await db.saveRecurringExpense(RecurringExpense(title: 'Kos', category: 'Tempat tinggal', amount: 1500000, from: start));
+  await db.saveRecurringExpense(RecurringExpense(title: 'Internet', category: 'Tagihan & utilitas', amount: 350000, from: start));
+  await db.saveRecurringExpense(RecurringExpense(title: 'Cicilan motor', category: 'Cicilan & utang', amount: 900000, from: now.plus(-2)));
+  for (var i = 0; i <= 3; i++) {
+    final m = start.plus(i);
+    final spends = [
+      (3, 85000.0 + i * 10000, 'Makan & minum', 'Belanja mingguan'),
+      (9, 420000.0, 'Makan & minum', null),
+      (12, 150000.0, 'Transportasi', 'Bensin'),
+      (18, 275000.0 - i * 20000, 'Hiburan', 'Nonton'),
+      (22, 310000.0, 'Belanja', null),
+    ];
+    for (final (day, amount, cat, note) in spends) {
+      if (m == now && day > finance.today.day) continue;
+      await db.addFinanceEntry(FinanceEntry(kind: FinanceEntryKind.expense, date: DateTime(m.year, m.month, day), amount: amount, category: cat, note: note));
+    }
+  }
+  await db.addFinanceEntry(FinanceEntry(kind: FinanceEntryKind.income, date: now.start, amount: 750000, note: 'Freelance desain'));
+  await finance.load();
+}
+
 void main() {
   late ScheduleProvider provider;
+  late FinanceProvider finance;
   late AgendaProvider agenda;
   late TargetProvider targets;
 
@@ -159,11 +194,15 @@ void main() {
         agenda = AgendaProvider();
         await agenda.load();
         if (agenda.items.isEmpty) await _seedAgenda(agenda);
+        finance = FinanceProvider();
+        await finance.load();
+        if (finance.firstMonth == null) await _seedFinance(finance);
         targets = TargetProvider()..schedule = provider;
         await targets.load();
         if (targets.active.isEmpty) await _seedTargets(targets);
       });
       addTearDown(targets.dispose);
+      addTearDown(finance.dispose);
       addTearDown(provider.dispose);
       addTearDown(agenda.dispose);
 
@@ -174,6 +213,7 @@ void main() {
             ChangeNotifierProvider.value(value: provider),
             ChangeNotifierProvider.value(value: agenda),
             ChangeNotifierProvider.value(value: targets),
+            ChangeNotifierProvider.value(value: finance),
           ],
           child: MaterialApp(
             navigatorKey: navigatorKey,
@@ -241,10 +281,20 @@ void main() {
 
       await tester.tap(find.byTooltip('Keuangan'));
       await shot('4_keuangan');
+      final financeList = find.descendant(of: find.byType(FinanceTab), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('Freelance desain'), 300, scrollable: financeList);
+      await shot('4a_keuangan_transaksi');
+      await tester.scrollUntilVisible(find.text('PROYEKSI AKHIR TAHUN'), 300, scrollable: financeList);
+      await tester.drag(financeList, const Offset(0, -400));
+      await shot('4b_keuangan_tabungan');
+      showFinanceEntrySheet(navigatorKey.currentContext!, kind: FinanceEntryKind.expense, date: finance.today);
+      await shot('4c_sheet_pengeluaran');
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
 
       // Pengaturan dibuka dari tombol profil di app bar.
       await tester.tap(find.byTooltip('Pengaturan'));
-      await shot('4b_pengaturan');
+      await shot('4d_pengaturan');
       expect(find.byType(SettingsScreen), findsOneWidget);
 
       // Toleransi terlambat bisa diubah dari Pengaturan dan langsung berlaku.

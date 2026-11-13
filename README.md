@@ -9,8 +9,21 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Hari Ini** — timeline vertikal dari template yang berlaku untuk hari itu. Headernya menempel
   (`SliverPersistentHeader`): saat daftar digulung, tanggal dan chip hari beruntun melipat hingga
   tersisa kartu progresnya saja, dan kegiatan lewat di belakangnya dengan bayangan tipis.
-- **Navigasi** — empat tab ikon di bawah (Hari Ini, Agenda, Target, Pengaturan), bisa diketuk
-  atau digeser kanan-kiri.
+- **Navigasi** — empat tab ikon di bawah (Hari Ini, Agenda, Target, Keuangan), bisa diketuk
+  atau digeser kanan-kiri. **Pengaturan** dibuka dari ikon profil di kanan lonceng notifikasi.
+- **Keuangan** — pengeluaran bulanan dan rancangan tabungan:
+  - **Gaji** diisi sekali dan berlaku tiap bulan sampai diubah; mengubahnya tidak mengubah bulan
+    lalu. **Pemasukan lain** (bonus, freelance) dicatat per transaksi.
+  - **Pengeluaran tetap** (kos, cicilan, langganan) diisi sekali dan otomatis terhitung tiap
+    bulan; mengubah jumlahnya berlaku mulai bulan ini. **Pengeluaran tidak tetap** dicatat per
+    transaksi dengan kategori.
+  - Ringkasan per bulan: pendapatan − pengeluaran (tetap / tidak tetap) = sisa, rincian per
+    kategori dibanding rata-ratanya; bulan sebelumnya bisa dibuka lewat tombol bulan.
+  - **Rata-rata bulanan** dari bulan-bulan yang sudah selesai (bulan berjalan tidak ikut, kecuali
+    belum ada bulan yang selesai, sebagai perkiraan sementara).
+  - **Saldo tabungan** = saldo yang diisi + sisa tiap bulan yang sudah selesai − penarikan
+    tabungan. **Proyeksi** saldo di akhir tiap tahun sampai lima tahun ke depan, bila sisa per
+    bulan tetap seperti rata-rata.
 - **Tampilan default polos** — kartu kegiatan tampil apa adanya. Tombol **Batalkan** dan **Tandai
   selesai** hanya muncul pada kegiatan yang jamnya sedang berjalan (di dalam rentang
   mulai–selesai); kegiatan lain tetap bisa ditandai lewat lingkaran centang di kanan kartu.
@@ -42,9 +55,9 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Animasi centang** — cincin menyapu melingkar, lingkaran terisi, lalu centang digambar
   (`lib/widgets/animated_check_circle.dart`). Irama dan proporsinya diambil dari aset animasi
   yang disediakan, tapi digambar sebagai vektor agar transparan, tajam, dan ikut warna palet.
-- **Data lokal** — sqflite dengan skema v5: `daily_logs`, `app_settings`, `templates`,
+- **Data lokal** — sqflite dengan skema v6: `daily_logs`, `app_settings`, `templates`,
   `template_activities`, `day_assignments`, `agenda_items`, `agenda_occurrences`, `targets`,
-  `target_entries`. Migrasi dari
+  `target_entries`, `salary_changes`, `finance_entries`, `recurring_expenses`. Migrasi dari
   skema lama menjaga log yang sudah ada. Menyunting template mempertahankan id kegiatannya, jadi
   log lama tetap menunjuk ke kegiatan yang benar.
 - **Batalkan kegiatan** — bottom sheet memilih alasan singkat (chip) termasuk opsi teks bebas
@@ -104,6 +117,7 @@ lib/
   providers/schedule_provider.dart   # state management (Provider/ChangeNotifier), statistik & kalender
   providers/agenda_provider.dart     # agenda, status selesai per tanggal, pengingat agenda
   providers/target_provider.dart     # target, catatan, progres & status laju
+  providers/finance_provider.dart    # gaji, pengeluaran, rata-rata, saldo & proyeksi tabungan
   screens/
     shell_screen.dart            # app bar + bottom nav 4 tab (swipe antar halaman)
     manage_templates_screen.dart # daftar template + penugasan per hari
@@ -114,7 +128,8 @@ lib/
     target_detail_screen.dart    # detail target: grafik / per periode / kisi streak + catatan
     stats_screen.dart            # Pengaturan → Lainnya → Statistik
     cancellation_log_screen.dart # Pengaturan → Lainnya → Log pembatalan
-    settings_tab.dart            # Pengaturan
+    settings_screen.dart         # Pengaturan (dibuka dari ikon profil)
+    finance_tab.dart             # Keuangan: ringkasan bulan, rata-rata, tabungan & proyeksi
     notification_feed_screen.dart
   widgets/                       # ActivityTile, sheet alasan batal / zona waktu / tema, ring chart
   theme/app_theme.dart           # palet terang & gelap (ThemeExtension) dan ThemeData

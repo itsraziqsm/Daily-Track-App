@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/agenda_provider.dart';
+import 'providers/finance_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/target_provider.dart';
 import 'screens/shell_screen.dart';
@@ -28,6 +29,7 @@ class GroUApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ScheduleProvider(themeMode: themeMode)),
+        ChangeNotifierProvider(create: (_) => FinanceProvider()),
         // Pengingat agenda dihitung pada zona waktu aplikasi, jadi ikut
         // dijadwal ulang saat zona di Pengaturan berubah.
         ChangeNotifierProxyProvider<ScheduleProvider, AgendaProvider>(
