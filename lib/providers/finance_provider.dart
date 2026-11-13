@@ -116,8 +116,10 @@ class FinanceProvider extends ChangeNotifier {
     await load();
   }
 
-  Future<void> deleteEntry(FinanceEntry entry) async {
-    await _db.deleteFinanceEntry(entry.id);
+  Future<void> deleteEntry(FinanceEntry entry) => deleteEntryById(entry.id);
+
+  Future<void> deleteEntryById(int id) async {
+    await _db.deleteFinanceEntry(id);
     await load();
   }
 

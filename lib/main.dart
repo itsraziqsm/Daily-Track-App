@@ -36,10 +36,13 @@ class GroUApp extends StatelessWidget {
           create: (_) => AgendaProvider(),
           update: (_, schedule, agenda) => agenda!..onTimeZone(schedule.timeZone),
         ),
-        // Target streak dihitung dari log harian milik ScheduleProvider.
-        ChangeNotifierProxyProvider<ScheduleProvider, TargetProvider>(
+        // Target streak dihitung dari log harian, target finansial dari
+        // saldo tabungan.
+        ChangeNotifierProxyProvider2<ScheduleProvider, FinanceProvider, TargetProvider>(
           create: (_) => TargetProvider(),
-          update: (_, schedule, targets) => targets!..schedule = schedule,
+          update: (_, schedule, finance, targets) => targets!
+            ..schedule = schedule
+            ..finance = finance,
         ),
       ],
       child: Selector<ScheduleProvider, ThemeMode>(

@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 
 import '../db/database_helper.dart';
+import '../models/finance.dart';
 import '../models/target.dart';
 import '../utils/app_time.dart';
+import 'finance_provider.dart';
 import 'schedule_provider.dart';
 
 /// Status sebuah target dibanding laju yang dibutuhkan.
@@ -21,6 +23,17 @@ enum TargetStatus {
 
   /// Tanpa tenggat atau periode, jadi tidak ada laju untuk dibandingkan.
   ongoing,
+
+  /// Target finansial: saldo cukup, dan setelah membeli masih tersisa
+  /// setidaknya [TargetProvider.ampleShare] dari saldo.
+  fundsAmple,
+
+  /// Target finansial: saldo cukup, tapi membeli akan memakan lebih dari
+  /// seperlima saldo.
+  fundsEnough,
+
+  /// Target finansial yang sudah ditandai dibeli.
+  purchased,
 }
 
 /// Progres target saat ini.
@@ -36,7 +49,12 @@ class TargetProgress {
   /// Untuk streak: streak terpanjang sepanjang riwayat.
   final int? best;
 
-  const TargetProgress({required this.current, required this.fraction, required this.status, this.best});
+  /// Untuk target finansial: perkiraan bulan sampai saldo mencukupi dengan
+  /// sisa rata-rata per bulan; 0 bila sudah cukup, null bila sisa bulanan
+  /// tidak positif sehingga tidak akan tercapai.
+  final int? monthsToGo;
+
+  const TargetProgress({required this.current, required this.fraction, required this.status, this.best, this.monthsToGo});
 }
 
 /// Jumlah hitungan pada satu periode, untuk riwayat target hitungan.
@@ -53,8 +71,15 @@ class TargetProvider extends ChangeNotifier {
   /// Selisih pecahan progres dari laju ideal yang masih dianggap sesuai jalur.
   static const paceSlack = 0.15;
 
+  /// Bagian saldo yang masih tersisa setelah membeli agar dana dianggap
+  /// "sangat mencukupi".
+  static const ampleShare = 0.8;
+
   /// Sumber log harian untuk target streak; diisi oleh ProxyProvider.
   ScheduleProvider? schedule;
+
+  /// Sumber saldo tabungan untuk target finansial; diisi oleh ProxyProvider.
+  FinanceProvider? finance;
 
   List<Target> _targets = [];
   Map<int, List<TargetEntry>> _entries = {};
@@ -150,7 +175,52 @@ class TargetProvider extends ChangeNotifier {
           status = _paceStatus(fraction, start, end, day);
         }
         return TargetProgress(current: current, fraction: fraction, status: status);
+      case TargetKind.finance:
+        return _financeProgress(target, day);
     }
+  }
+
+  TargetProgress _financeProgress(Target target, DateTime day) {
+    final price = target.targetValue;
+    final balance = finance?.balance ?? 0;
+    final fraction = _fraction(balance, price);
+    final monthsToGo = finance?.monthsUntil(price);
+    final TargetStatus status;
+    if (target.isPurchased) {
+      status = TargetStatus.purchased;
+    } else if (balance >= price && balance > 0) {
+      status = (balance - price) / balance >= ampleShare ? TargetStatus.fundsAmple : TargetStatus.fundsEnough;
+    } else if (target.deadline == null) {
+      status = TargetStatus.ongoing;
+    } else if (day.isAfter(target.deadline!)) {
+      status = TargetStatus.missed;
+    } else {
+      // Sesuai jalur bila dengan sisa rata-rata, saldo cukup paling lambat
+      // di bulan tenggat.
+      final monthsLeft = Month.of(target.deadline!).monthsSince(Month.of(day));
+      status = monthsToGo != null && monthsToGo <= monthsLeft ? TargetStatus.onTrack : TargetStatus.behind;
+    }
+    return TargetProgress(current: balance, fraction: fraction, status: status, monthsToGo: monthsToGo);
+  }
+
+  /// Menandai target finansial sudah dibeli: harganya dicatat sebagai
+  /// penarikan tabungan, lalu target dipindah ke arsip.
+  Future<void> markPurchased(Target target) async {
+    final now = finance!.today;
+    final entry = await finance!.addEntry(FinanceEntry(
+      kind: FinanceEntryKind.withdrawal,
+      date: now,
+      amount: target.targetValue,
+      note: target.title,
+    ));
+    await save(target.copyWith(archived: true, purchasedAt: now, purchaseEntryId: entry.id));
+  }
+
+  /// Membatalkan tanda sudah dibeli: penarikannya dihapus dan target aktif
+  /// lagi.
+  Future<void> undoPurchase(Target target) async {
+    if (target.purchaseEntryId != null) await finance!.deleteEntryById(target.purchaseEntryId!);
+    await save(target.copyWith(archived: false, clearPurchase: true));
   }
 
   static double _fraction(double current, double goal) => goal <= 0 ? 1 : (current / goal).clamp(0.0, 1.0);

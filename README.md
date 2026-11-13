@@ -55,7 +55,7 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Animasi centang** — cincin menyapu melingkar, lingkaran terisi, lalu centang digambar
   (`lib/widgets/animated_check_circle.dart`). Irama dan proporsinya diambil dari aset animasi
   yang disediakan, tapi digambar sebagai vektor agar transparan, tajam, dan ikut warna palet.
-- **Data lokal** — sqflite dengan skema v6: `daily_logs`, `app_settings`, `templates`,
+- **Data lokal** — sqflite dengan skema v7: `daily_logs`, `app_settings`, `templates`,
   `template_activities`, `day_assignments`, `agenda_items`, `agenda_occurrences`, `targets`,
   `target_entries`, `salary_changes`, `finance_entries`, `recurring_expenses`. Migrasi dari
   skema lama menjaga log yang sudah ada. Menyunting template mempertahankan id kegiatannya, jadi
@@ -75,7 +75,7 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
     sudah selesai tidak diingatkan.
   - Titik status riwayat (sempurna / terlambat / batal) tidak lagi tampil di sini, tapi tetap
     tersedia di `lib/widgets/history_status.dart` untuk dipakai lagi.
-- **Target** — tiga jenis, masing-masing dengan halaman detail:
+- **Target** — empat jenis, masing-masing dengan halaman detail:
   - **Streak**: hari beruntun yang semua kegiatannya selesai (terlambat tetap dihitung, pembatalan
     memutus), dihitung otomatis dari log. Hari ini yang belum lengkap tidak memutus streak.
     Detailnya menampilkan rekor terpanjang dan kisi 28 hari terakhir.
@@ -84,6 +84,12 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
     untuk melihat nilai tiap titik.
   - **Hitungan**: tambah +1 langsung dari kartu (tahan untuk jumlah lain), total atau direset per
     minggu/bulan/tahun. Detailnya menampilkan jumlah per periode.
+  - **Finansial & keinginan** (dana darurat, laptop): progresnya dibaca dari saldo tabungan di
+    Keuangan, tanpa menyisihkan apa pun — target ini pengingat. Selama saldo belum cukup, kartunya
+    menampilkan perkiraan bulan saat dana cukup dengan sisa rata-rata per bulan. Bila sudah cukup:
+    **Dana sangat mencukupi** kalau sisa setelah beli ≥ 80% saldo, selain itu **Dana cukup**. Saldo
+    baru berkurang setelah ditandai **Sudah dibeli** (dengan konfirmasi), dicatat sebagai penarikan
+    tabungan, dan target pindah ke arsip; pembeliannya bisa dibatalkan dari detail target.
   - Status **Tercapai / Sesuai jalur / Perlu dikejar / Lewat tenggat** dibandingkan dengan laju
     yang dibutuhkan menuju tenggat atau akhir periode. Target bisa diarsipkan atau dihapus.
 - **Pengaturan → Lainnya**

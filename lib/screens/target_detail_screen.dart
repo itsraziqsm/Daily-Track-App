@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../models/target.dart';
+import '../providers/finance_provider.dart';
 import '../providers/schedule_provider.dart';
 import '../providers/target_provider.dart';
 import '../theme/app_theme.dart';
@@ -25,6 +26,7 @@ class TargetDetailScreen extends StatelessWidget {
     final c = AppColors.of(context);
     final targets = context.watch<TargetProvider>();
     final schedule = context.watch<ScheduleProvider>();
+    final finance = context.watch<FinanceProvider>();
     final target = targets.byId(targetId);
 
     if (target == null) return Scaffold(backgroundColor: c.bg, appBar: AppBar());
@@ -59,7 +61,11 @@ class TargetDetailScreen extends StatelessWidget {
             target: target,
             progress: progress,
             onTap: () {},
-            action: target.kind == TargetKind.streak ? null : TargetEntryButton(target: target),
+            action: switch (target.kind) {
+              TargetKind.streak => null,
+              TargetKind.finance => null,
+              _ => TargetEntryButton(target: target),
+            },
           ),
           const SizedBox(height: 24),
           ...switch (target.kind) {
@@ -86,12 +92,138 @@ class TargetDetailScreen extends StatelessWidget {
                 const _SectionLabel('28 HARI TERAKHIR'),
                 _StreakGrid(schedule: schedule),
               ],
+            TargetKind.finance => [
+                const _SectionLabel('RINCIAN'),
+                _FinanceBreakdown(target: target, progress: progress, finance: finance),
+                const SizedBox(height: 16),
+                if (target.isPurchased) ...[
+                  _Hint('Dibeli ${DateFormat('d MMMM yyyy', 'id_ID').format(target.purchasedAt!)}; '
+                      '${formatRupiah(target.targetValue)} sudah dicatat sebagai penarikan tabungan.'),
+                  const SizedBox(height: 12),
+                  SheetSecondaryButton(label: 'Batalkan pembelian', onTap: () => confirmUndoPurchase(context, target)),
+                ] else ...[
+                  SheetPrimaryButton(label: 'Tandai sudah dibeli', disabledLabel: '', onTap: () => confirmPurchase(context, target, progress)),
+                  const SizedBox(height: 10),
+                  const _Hint('Target ini hanya pengingat: saldo tabungan tidak disisihkan, dan baru berkurang setelah kamu menandainya sudah dibeli.'),
+                ],
+              ],
           },
-          if (target.kind != TargetKind.streak) ...[
+          if (target.kind == TargetKind.value || target.kind == TargetKind.count) ...[
             if (!(target.kind == TargetKind.count && target.period == TargetPeriod.total)) const SizedBox(height: 24),
             const _SectionLabel('CATATAN'),
             if (entries.isEmpty && target.kind == TargetKind.count) const _Hint('Belum ada catatan.'),
             for (final e in entries) _EntryRow(target: target, entry: e),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Meminta konfirmasi lalu menandai target finansial sudah dibeli: harganya
+/// dicatat sebagai penarikan tabungan dan target pindah ke arsip.
+Future<void> confirmPurchase(BuildContext context, Target target, TargetProgress progress) async {
+  final targets = context.read<TargetProvider>();
+  final balance = progress.current;
+  final after = balance - target.targetValue;
+  final choice = await showConfirmDialog(
+    context,
+    title: 'Sudah membeli "${target.title}"?',
+    message: 'Saldo tabungan berkurang ${formatRupiah(target.targetValue)}, dari ${formatRupiah(balance)} '
+        'menjadi ${formatRupiah(after)}${after < 0 ? ' (minus)' : ''}. Target dipindah ke arsip. '
+        'Tandai hanya bila benar-benar sudah dibeli.',
+    actions: const {'buy': 'Sudah dibeli'},
+  );
+  if (choice == null) return;
+  await targets.markPurchased(target);
+  if (context.mounted) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text('"${target.title}" ditandai sudah dibeli.')));
+  }
+}
+
+Future<void> confirmUndoPurchase(BuildContext context, Target target) async {
+  final targets = context.read<TargetProvider>();
+  final choice = await showConfirmDialog(
+    context,
+    title: 'Batalkan pembelian?',
+    message: 'Penarikan ${formatRupiah(target.targetValue)} dihapus dari tabungan dan target aktif lagi.',
+    actions: const {'undo': 'Batalkan pembelian'},
+  );
+  if (choice != null) await targets.undoPurchase(target);
+}
+
+/// Tombol "Sudah dibeli" di kartu target finansial yang dananya cukup.
+class PurchaseButton extends StatelessWidget {
+  final Target target;
+  final TargetProgress progress;
+  const PurchaseButton({super.key, required this.target, required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return GestureDetector(
+      onTap: () => confirmPurchase(context, target, progress),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(color: c.orange, borderRadius: BorderRadius.circular(11)),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.shoppingBag, size: 13, color: Colors.white),
+            SizedBox(width: 5),
+            Text('Sudah dibeli', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FinanceBreakdown extends StatelessWidget {
+  final Target target;
+  final TargetProgress progress;
+  final FinanceProvider finance;
+  const _FinanceBreakdown({required this.target, required this.progress, required this.finance});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final balance = progress.current;
+    final price = target.targetValue;
+    final enough = balance >= price && balance > 0;
+    final perMonth = finance.average.surplus;
+    Widget line(String label, String value, {bool strong = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(child: Text(label, style: TextStyle(fontSize: 13, fontWeight: strong ? FontWeight.w800 : FontWeight.w600, color: strong ? c.ink : c.inkMuted3))),
+              Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: c.ink)),
+            ],
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      decoration: BoxDecoration(color: c.card, border: Border.all(color: c.line, width: 1.5), borderRadius: BorderRadius.circular(18)),
+      child: Column(
+        children: [
+          line('Dana dibutuhkan', formatRupiah(price)),
+          line('Saldo tabungan', formatRupiah(balance)),
+          if (!target.isPurchased) ...[
+            Divider(height: 14, color: c.line),
+            if (enough)
+              line('Sisa setelah beli', '${formatRupiah(balance - price)} · ${((balance - price) / balance * 100).round()}%', strong: true)
+            else ...[
+              line('Kekurangan', formatRupiah(price - balance), strong: true),
+              line('Sisa rata-rata per bulan', formatRupiah(perMonth)),
+              line(
+                'Perkiraan cukup',
+                progress.monthsToGo == null
+                    ? 'belum terkejar'
+                    : DateFormat('MMMM yyyy', 'id_ID').format(DateTime(finance.today.year, finance.today.month + progress.monthsToGo!)),
+              ),
+            ],
           ],
         ],
       ),

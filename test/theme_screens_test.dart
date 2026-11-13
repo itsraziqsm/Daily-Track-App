@@ -28,6 +28,7 @@ import 'package:grou/screens/settings_screen.dart';
 import 'package:grou/screens/shell_screen.dart';
 import 'package:grou/screens/stats_screen.dart';
 import 'package:grou/screens/target_detail_screen.dart';
+import 'package:grou/screens/target_tab.dart';
 import 'package:grou/widgets/target_sheets.dart';
 import 'package:grou/screens/template_editor_screen.dart';
 import 'package:grou/theme/app_theme.dart';
@@ -197,9 +198,23 @@ void main() {
         finance = FinanceProvider();
         await finance.load();
         if (finance.firstMonth == null) await _seedFinance(finance);
-        targets = TargetProvider()..schedule = provider;
+        targets = TargetProvider()
+          ..schedule = provider
+          ..finance = finance;
         await targets.load();
-        if (targets.active.isEmpty) await _seedTargets(targets);
+        if (targets.active.isEmpty) {
+          await _seedTargets(targets);
+          final now = finance.today;
+          await targets.save(Target(kind: TargetKind.finance, title: 'Laptop kerja', targetValue: 15000000, createdAt: now));
+          await targets.save(Target(
+            kind: TargetKind.finance,
+            title: 'Dana darurat',
+            targetValue: 60000000,
+            deadline: DateTime(now.year + 1, now.month, 28),
+            createdAt: now,
+          ));
+          await targets.save(Target(kind: TargetKind.finance, title: 'Headphone', targetValue: 1500000, createdAt: now));
+        }
       });
       addTearDown(targets.dispose);
       addTearDown(finance.dispose);
@@ -262,7 +277,17 @@ void main() {
       await tester.tap(find.byTooltip('Target'));
       await shot('3_target');
       expect(find.text('Berat badan'), findsOneWidget);
-      for (final (name, title) in [('3b_detail_angka', 'Berat badan'), ('3c_detail_hitungan', 'Gym'), ('3d_detail_streak', 'Konsisten 2 minggu')]) {
+      final targetList = find.descendant(of: find.byType(TargetTab), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('Headphone'), 300, scrollable: targetList);
+      await shot('3a_target_finansial');
+      expect(find.text('Dana sangat mencukupi'), findsOneWidget);
+      expect(find.text('Dana cukup'), findsOneWidget);
+      for (final (name, title) in [('3b_detail_angka', 'Berat badan'), ('3c_detail_hitungan', 'Gym'), ('3d_detail_streak', 'Konsisten 2 minggu'), ('3g_detail_finansial', 'Laptop kerja'), ('3h_detail_finansial_kurang', 'Dana darurat')]) {
+        // Kembali ke atas daftar lalu gulir turun sampai kartunya terlihat;
+        // kartu yang jauh dari layar belum dibangun oleh ListView.
+        await tester.drag(targetList, const Offset(0, 4000));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.text(title), 200, scrollable: targetList);
         await tester.ensureVisible(find.text(title));
         await tester.pumpAndSettle();
         await tester.tap(find.text(title));

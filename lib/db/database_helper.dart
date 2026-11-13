@@ -43,7 +43,7 @@ class DatabaseHelper {
     final path = pathOverride ?? join(await getDatabasesPath(), 'jadwal_harian.db');
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, version) async {
         await db.execute(_createLogs);
         await db.execute(_createSettings);
@@ -76,6 +76,11 @@ class DatabaseHelper {
           await db.execute(_createTargetEntries);
         }
         if (oldVersion < 6) await _createFinanceTables(db);
+        // Database yang dibuat di v5–v6 belum punya kolom pembelian target.
+        if (oldVersion >= 5 && oldVersion < 7) {
+          await db.execute('ALTER TABLE targets ADD COLUMN purchasedAt TEXT');
+          await db.execute('ALTER TABLE targets ADD COLUMN purchaseEntryId INTEGER');
+        }
       },
     );
   }
@@ -163,7 +168,9 @@ class DatabaseHelper {
       period TEXT NOT NULL,
       deadline TEXT,
       createdAt TEXT NOT NULL,
-      archived INTEGER NOT NULL DEFAULT 0
+      archived INTEGER NOT NULL DEFAULT 0,
+      purchasedAt TEXT,
+      purchaseEntryId INTEGER
     )
   ''';
 

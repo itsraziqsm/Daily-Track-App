@@ -6,19 +6,24 @@
 ///   80 → 72 kg atau bench press 60 → 100 kg. Bisa naik atau turun.
 /// - [count]: hitungan yang ditambah manual, mis. 12 buku setahun atau gym
 ///   3× seminggu; bisa direset per minggu/bulan/tahun.
-enum TargetKind { streak, value, count }
+/// - [finance]: dana untuk tujuan atau keinginan, mis. dana darurat atau
+///   laptop. Progresnya dibaca dari saldo tabungan di Keuangan tanpa
+///   menyisihkan apa pun — target ini pengingat, bukan rekening terpisah.
+enum TargetKind { streak, value, count, finance }
 
 extension TargetKindInfo on TargetKind {
   String get label => switch (this) {
         TargetKind.streak => 'Streak',
         TargetKind.value => 'Angka',
         TargetKind.count => 'Hitungan',
+        TargetKind.finance => 'Finansial',
       };
 
   String get description => switch (this) {
         TargetKind.streak => 'Hari beruntun semua kegiatan selesai, dihitung otomatis',
         TargetKind.value => 'Catat angka menuju target, mis. berat badan atau beban gym',
         TargetKind.count => 'Tambah hitungan, mis. buku yang dibaca atau sesi gym',
+        TargetKind.finance => 'Dana untuk tujuan atau keinginan, dibandingkan dengan saldo tabungan',
       };
 }
 
@@ -89,6 +94,11 @@ class Target {
   final DateTime createdAt;
   final bool archived;
 
+  /// Untuk target finansial: tanggal pengguna menandai barangnya sudah
+  /// dibeli, dan catatan penarikan tabungan yang dibuat saat itu.
+  final DateTime? purchasedAt;
+  final int? purchaseEntryId;
+
   Target({
     this.id = 0,
     required this.kind,
@@ -100,11 +110,16 @@ class Target {
     this.deadline,
     required this.createdAt,
     this.archived = false,
+    this.purchasedAt,
+    this.purchaseEntryId,
   });
 
   bool get isDecreasing => kind == TargetKind.value && (startValue ?? 0) > targetValue;
 
-  Target copyWith({bool? archived}) => Target(
+  bool get isPurchased => purchasedAt != null;
+
+  /// [clearPurchase] menghapus tanda sudah dibeli.
+  Target copyWith({bool? archived, DateTime? purchasedAt, int? purchaseEntryId, bool clearPurchase = false}) => Target(
         id: id,
         kind: kind,
         title: title,
@@ -115,6 +130,8 @@ class Target {
         deadline: deadline,
         createdAt: createdAt,
         archived: archived ?? this.archived,
+        purchasedAt: clearPurchase ? null : (purchasedAt ?? this.purchasedAt),
+        purchaseEntryId: clearPurchase ? null : (purchaseEntryId ?? this.purchaseEntryId),
       );
 
   static String _key(DateTime d) =>
@@ -131,6 +148,8 @@ class Target {
         'deadline': deadline == null ? null : _key(deadline!),
         'createdAt': _key(createdAt),
         'archived': archived ? 1 : 0,
+        'purchasedAt': purchasedAt == null ? null : _key(purchasedAt!),
+        'purchaseEntryId': purchaseEntryId,
       };
 
   factory Target.fromMap(Map<String, Object?> map) => Target(
@@ -144,6 +163,8 @@ class Target {
         deadline: map['deadline'] == null ? null : DateTime.parse(map['deadline'] as String),
         createdAt: DateTime.parse(map['createdAt'] as String),
         archived: (map['archived'] as int) == 1,
+        purchasedAt: map['purchasedAt'] == null ? null : DateTime.parse(map['purchasedAt'] as String),
+        purchaseEntryId: map['purchaseEntryId'] as int?,
       );
 }
 

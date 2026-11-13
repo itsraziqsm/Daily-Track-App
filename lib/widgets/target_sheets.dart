@@ -7,6 +7,7 @@ import '../providers/target_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_time.dart';
 import '../utils/number_format.dart';
+import '../utils/rupiah_input.dart';
 import 'sheet_parts.dart';
 
 DateTime get _today {
@@ -40,7 +41,9 @@ class _TargetSheetState extends State<_TargetSheet> {
   late final _title = TextEditingController(text: _original?.title ?? '');
   late final _unit = TextEditingController(text: _original?.unit ?? '');
   late final _start = TextEditingController(text: _number(_original?.startValue));
-  late final _goal = TextEditingController(text: _number(_original?.targetValue));
+  late final _goal = TextEditingController(
+    text: _original?.kind == TargetKind.finance ? formatNumber(_original!.targetValue) : _number(_original?.targetValue),
+  );
   late TargetPeriod _period = _original?.period ?? TargetPeriod.week;
   late DateTime? _deadline = _original?.deadline;
 
@@ -51,9 +54,15 @@ class _TargetSheetState extends State<_TargetSheet> {
   /// Tenggat berlaku untuk target yang tidak direset per periode.
   bool get _hasDeadline => _kind != TargetKind.count || _period == TargetPeriod.total;
 
+  bool get _isFinance => _kind == TargetKind.finance;
+
+  /// Angka target: rupiah untuk target finansial (titik sebagai pemisah
+  /// ribuan), angka biasa untuk lainnya.
+  double? get _goalValue => _isFinance ? parseRupiah(_goal.text) : parseNumber(_goal.text);
+
   String? get _problem {
     if (_title.text.trim().isEmpty) return 'Isi nama target';
-    final goal = parseNumber(_goal.text);
+    final goal = _goalValue;
     if (goal == null || goal <= 0 && _kind != TargetKind.value) return 'Isi angka target';
     if (_kind == TargetKind.value) {
       final start = parseNumber(_start.text);
@@ -89,9 +98,9 @@ class _TargetSheetState extends State<_TargetSheet> {
       id: _original?.id ?? 0,
       kind: _kind,
       title: _title.text.trim(),
-      unit: _kind == TargetKind.streak || unit.isEmpty ? null : unit,
+      unit: _kind == TargetKind.streak || _isFinance || unit.isEmpty ? null : unit,
       startValue: _kind == TargetKind.value ? parseNumber(_start.text) : null,
-      targetValue: parseNumber(_goal.text)!,
+      targetValue: _goalValue!,
       period: _kind == TargetKind.count ? _period : TargetPeriod.total,
       deadline: _hasDeadline ? _deadline : null,
       createdAt: _original?.createdAt ?? _today,
@@ -130,6 +139,7 @@ class _TargetSheetState extends State<_TargetSheet> {
       TargetKind.streak => ('mis. Konsisten 2 minggu', ''),
       TargetKind.value => ('mis. Turun berat badan', 'mis. kg'),
       TargetKind.count => ('mis. Baca buku', 'mis. buku'),
+      TargetKind.finance => ('mis. Laptop baru atau dana darurat', ''),
     };
 
     return SheetScaffold(
@@ -141,7 +151,17 @@ class _TargetSheetState extends State<_TargetSheet> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final k in TargetKind.values) SheetChip(label: k.label, selected: _kind == k, onTap: () => setState(() => _kind = k)),
+              for (final k in TargetKind.values)
+                SheetChip(
+                  label: k.label,
+                  selected: _kind == k,
+                  onTap: () => setState(() {
+                    // Format angkanya berbeda (rupiah vs desimal), jadi isian
+                    // dikosongkan saat berpindah ke atau dari Finansial.
+                    if ((k == TargetKind.finance) != _isFinance) _goal.clear();
+                    _kind = k;
+                  }),
+                ),
             ],
           ),
           const SizedBox(height: 14),
@@ -153,7 +173,7 @@ class _TargetSheetState extends State<_TargetSheet> {
           decoration: sheetInputDecoration(c, titleHint),
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.ink),
         ),
-        if (_kind != TargetKind.streak) ...[
+        if (_kind != TargetKind.streak && !_isFinance) ...[
           const SizedBox(height: 9),
           TextField(
             controller: _unit,
@@ -167,6 +187,7 @@ class _TargetSheetState extends State<_TargetSheet> {
           TargetKind.streak => 'TARGET HARI BERUNTUN',
           TargetKind.value => 'DARI → KE',
           TargetKind.count => 'TARGET JUMLAH',
+          TargetKind.finance => 'DANA YANG DIBUTUHKAN',
         }),
         Row(
           children: [
@@ -185,9 +206,12 @@ class _TargetSheetState extends State<_TargetSheet> {
             Expanded(
               child: TextField(
                 controller: _goal,
-                keyboardType: numberKeyboard,
+                keyboardType: _isFinance ? TextInputType.number : numberKeyboard,
+                inputFormatters: _isFinance ? [RupiahInputFormatter()] : null,
                 onChanged: (_) => setState(() {}),
-                decoration: sheetInputDecoration(c, 'Target', suffix: _kind == TargetKind.streak ? 'hari' : unit),
+                decoration: sheetInputDecoration(c, _isFinance ? '0' : 'Target', suffix: _kind == TargetKind.streak ? 'hari' : (_isFinance ? null : unit)).copyWith(
+                  prefixText: _isFinance ? 'Rp ' : null,
+                ),
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c.ink),
               ),
             ),

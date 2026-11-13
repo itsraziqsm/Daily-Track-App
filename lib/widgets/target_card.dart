@@ -12,6 +12,7 @@ extension TargetIcon on Target {
         TargetKind.streak => LucideIcons.flame,
         TargetKind.value => isDecreasing ? LucideIcons.trendingDown : LucideIcons.trendingUp,
         TargetKind.count => LucideIcons.listPlus,
+        TargetKind.finance => LucideIcons.piggyBank,
       };
 }
 
@@ -25,10 +26,25 @@ String targetSummary(Target t) {
       TargetKind.streak => '${formatNumber(t.targetValue)} hari beruntun',
       TargetKind.value => '${withUnit(t.startValue ?? 0, t.unit)} → ${withUnit(t.targetValue, t.unit)}',
       TargetKind.count => '${withUnit(t.targetValue, t.unit)}${t.period.suffix}',
+      TargetKind.finance => 'butuh ${formatRupiah(t.targetValue)}',
     },
     if (t.deadline != null) 'tenggat ${DateFormat('d MMM yyyy', 'id_ID').format(t.deadline!)}',
   ];
   return parts.join(' · ');
+}
+
+/// Keterangan target finansial: sisa saldo setelah membeli bila dananya sudah
+/// cukup, atau perkiraan kapan cukup dengan sisa rata-rata per bulan.
+String financeOutlook(Target t, TargetProgress p, DateTime today) {
+  final balance = p.current;
+  if (balance >= t.targetValue && balance > 0) {
+    final left = balance - t.targetValue;
+    return 'Sisa setelah beli ${formatRupiah(left)} (${(left / balance * 100).round()}% saldo)';
+  }
+  final months = p.monthsToGo;
+  if (months == null) return 'Belum terkejar: sisa rata-rata per bulan belum positif';
+  final when = DateFormat('MMMM yyyy', 'id_ID').format(DateTime(today.year, today.month + months));
+  return 'Perkiraan cukup $months bulan lagi · $when';
 }
 
 /// Kartu target untuk tab Target: judul, status, angka saat ini, dan bar
@@ -49,7 +65,11 @@ class TargetCard extends StatelessWidget {
       TargetKind.streak => ('${formatNumber(progress.current)} hari', 'dari ${formatNumber(t.targetValue)}'),
       TargetKind.value => (withUnit(progress.current, t.unit), 'target ${withUnit(t.targetValue, t.unit)}'),
       TargetKind.count => (formatNumber(progress.current), 'dari ${withUnit(t.targetValue, t.unit)}${t.period.suffix}'),
+      TargetKind.finance => t.isPurchased
+          ? (formatRupiahShort(t.targetValue), 'dibeli ${DateFormat('d MMM yyyy', 'id_ID').format(t.purchasedAt!)}')
+          : (formatRupiahShort(progress.current), 'saldo dari ${formatRupiahShort(t.targetValue)}'),
     };
+    final highlighted = const {TargetStatus.achieved, TargetStatus.fundsAmple, TargetStatus.fundsEnough}.contains(progress.status);
 
     return GestureDetector(
       onTap: onTap,
@@ -57,8 +77,8 @@ class TargetCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
         decoration: BoxDecoration(
-          color: progress.status == TargetStatus.achieved ? c.yellowBg : c.card,
-          border: Border.all(color: progress.status == TargetStatus.achieved ? c.yellowBorder : c.line, width: 1.5),
+          color: highlighted ? c.yellowBg : c.card,
+          border: Border.all(color: highlighted ? c.yellowBorder : c.line, width: 1.5),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
@@ -85,11 +105,13 @@ class TargetCard extends StatelessWidget {
                         targetSummary(t),
                         style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted),
                       ),
+                      // Di bawah judul, bukan di sampingnya, supaya status
+                      // yang panjang tidak memeras judul.
+                      const SizedBox(height: 6),
+                      TargetStatusChip(status: progress.status),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                TargetStatusChip(status: progress.status),
               ],
             ),
             const SizedBox(height: 14),
@@ -105,7 +127,14 @@ class TargetCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 11),
-            TargetProgressBar(fraction: progress.fraction),
+            TargetProgressBar(fraction: t.isPurchased ? 1 : progress.fraction),
+            if (t.kind == TargetKind.finance && !t.isPurchased) ...[
+              const SizedBox(height: 8),
+              Text(
+                financeOutlook(t, progress, DateTime.now()),
+                style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2, height: 1.35),
+              ),
+            ],
             if (progress.best != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -165,6 +194,9 @@ class TargetStatusChip extends StatelessWidget {
       TargetStatus.behind => ('Perlu dikejar', LucideIcons.triangleAlert, c.orangeChipBg, c.orangeChipInk),
       TargetStatus.missed => ('Lewat tenggat', LucideIcons.clock, c.orangeChipBg, c.orangeChipInk),
       TargetStatus.ongoing => ('Berjalan', LucideIcons.circleDot, c.rowBg, c.inkMuted3),
+      TargetStatus.fundsAmple => ('Dana sangat mencukupi', LucideIcons.circleCheckBig, c.yellowChipBg, c.yellowInk),
+      TargetStatus.fundsEnough => ('Dana cukup', LucideIcons.check, c.yellowChipBg, c.yellowInk2),
+      TargetStatus.purchased => ('Sudah dibeli', LucideIcons.shoppingBag, c.rowBg, c.inkMuted3),
     };
     return Container(
       padding: const EdgeInsets.fromLTRB(7, 4, 9, 4),

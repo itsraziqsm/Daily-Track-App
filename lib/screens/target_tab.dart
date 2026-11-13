@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../models/target.dart';
+import '../providers/finance_provider.dart';
 import '../providers/schedule_provider.dart';
 import '../providers/target_provider.dart';
 import '../theme/app_theme.dart';
@@ -23,12 +24,25 @@ class TargetTab extends StatefulWidget {
 class _TargetTabState extends State<TargetTab> {
   bool _showArchived = false;
 
+  /// Tombol cepat di kartu: catat/+1 untuk angka dan hitungan, "Sudah dibeli"
+  /// untuk target finansial yang dananya sudah cukup.
+  Widget? _actionFor(Target t, TargetProgress p) {
+    if (t.archived) return null;
+    return switch (t.kind) {
+      TargetKind.streak => null,
+      TargetKind.finance => p.status == TargetStatus.fundsAmple || p.status == TargetStatus.fundsEnough ? PurchaseButton(target: t, progress: p) : null,
+      _ => TargetEntryButton(target: t),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final targets = context.watch<TargetProvider>();
     // Target streak ikut berubah saat kegiatan dicentang di Hari Ini.
     context.watch<ScheduleProvider>();
+    // Target finansial membaca saldo tabungan dari Keuangan.
+    context.watch<FinanceProvider>();
     final active = targets.active;
     final archived = targets.archived;
 
@@ -38,7 +52,7 @@ class _TargetTabState extends State<TargetTab> {
             target: t,
             progress: targets.progressOf(t),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TargetDetailScreen(targetId: t.id))),
-            action: t.kind == TargetKind.streak || t.archived ? null : TargetEntryButton(target: t),
+            action: _actionFor(t, targets.progressOf(t)),
           ),
         );
 
