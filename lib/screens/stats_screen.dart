@@ -214,7 +214,7 @@ class _ReasonBar extends StatelessWidget {
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.ink),
                 ),
               ),
-              Text('${count}×', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: c.inkMuted)),
+              Text('$count×', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: c.inkMuted)),
             ],
           ),
           const SizedBox(height: 6),

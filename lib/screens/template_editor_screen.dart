@@ -28,7 +28,7 @@ class TemplateEditorScreen extends StatefulWidget {
 class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   late final TextEditingController _nameController =
       TextEditingController(text: widget.template?.name ?? '');
-  late List<Activity> _draft = [...(widget.template?.activities ?? const <Activity>[])];
+  late final List<Activity> _draft = [...(widget.template?.activities ?? const <Activity>[])];
   bool _saving = false;
 
   bool get _isNew => widget.template == null;
