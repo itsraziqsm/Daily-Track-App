@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -102,91 +103,97 @@ class _FinanceTabState extends State<FinanceTab> {
                 )
               : const SizedBox(width: double.infinity),
         ),
-        _PullableWallet(
-          onPulled: _reveal,
-          child: _SummaryCard(
-            monthLabel: monthLabel[0].toUpperCase() + monthLabel.substring(1),
-            summary: summary,
-            isCurrent: isCurrent,
-            salary: finance.currentSalary,
-            onEditSalary: () => showAmountSheet(
-              context,
-              title: 'Gaji bulanan',
-              subtitle: 'Berlaku mulai bulan ini sampai diubah lagi. Bulan-bulan sebelumnya tetap memakai gaji lama.',
-              initial: finance.currentSalary,
-              onSave: finance.setSalary,
-            ),
-          ),
-        ),
-        if (!_walletButton)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(LucideIcons.chevronsDown, size: 13, color: c.inkMuted2),
-                const SizedBox(width: 4),
-                Text(
-                  'Tarik dompet ke bawah untuk Dompet Saya',
-                  style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2),
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 10),
-        Row(
+        // Dompet dan semua isi di bawahnya dalam satu kolom yang menggambar
+        // dompet paling akhir: saat ditarik turun, dompet menimpa isi itu.
+        _FrontFirstColumn(
           children: [
-            Expanded(
-              child: _ActionButton(
-                icon: LucideIcons.minus,
-                label: 'Pengeluaran',
-                primary: true,
-                onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.expense, date: newEntryDate),
+          _PullableWallet(
+            onPulled: _reveal,
+            child: _SummaryCard(
+              monthLabel: monthLabel[0].toUpperCase() + monthLabel.substring(1),
+              summary: summary,
+              isCurrent: isCurrent,
+              salary: finance.currentSalary,
+              onEditSalary: () => showAmountSheet(
+                context,
+                title: 'Gaji bulanan',
+                subtitle: 'Berlaku mulai bulan ini sampai diubah lagi. Bulan-bulan sebelumnya tetap memakai gaji lama.',
+                initial: finance.currentSalary,
+                onSave: finance.setSalary,
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _ActionButton(
-                icon: LucideIcons.plus,
-                label: 'Pemasukan lain',
-                onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.income, date: newEntryDate),
+          ),
+          if (!_walletButton)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(LucideIcons.chevronsDown, size: 13, color: c.inkMuted2),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Tarik dompet ke bawah untuk Dompet Saya',
+                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2),
+                  ),
+                ],
               ),
+            ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  icon: LucideIcons.minus,
+                  label: 'Pengeluaran',
+                  primary: true,
+                  onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.expense, date: newEntryDate),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ActionButton(
+                  icon: LucideIcons.plus,
+                  label: 'Pemasukan lain',
+                  onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.income, date: newEntryDate),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 26),
+          SectionLabel('PENGELUARAN TETAP', trailing: fixed.isEmpty ? null : formatRupiah(summary.fixedExpense)),
+          for (final r in fixed)
+            _Row(
+              leading: r.category,
+              title: r.title,
+              amount: formatRupiah(r.amount),
+              onTap: isCurrent ? () => showRecurringSheet(context, expense: r) : null,
+            ),
+          if (isCurrent)
+            _AddRow(label: 'Tambah pengeluaran tetap', onTap: () => showRecurringSheet(context))
+          else if (fixed.isEmpty)
+            const SectionHint('Tidak ada pengeluaran tetap di bulan ini.'),
+          const SizedBox(height: 22),
+          SectionLabel('TRANSAKSI', trailing: entries.isEmpty ? null : '${entries.length} catatan'),
+          if (entries.isEmpty) const SectionHint('Belum ada transaksi di bulan ini.'),
+          for (final e in entries)
+            _Row(
+              leading: DateFormat('d MMM', 'id_ID').format(e.date),
+              title: switch (e.kind) {
+                FinanceEntryKind.expense => e.note ?? e.category ?? 'Pengeluaran',
+                FinanceEntryKind.income => e.note ?? 'Pemasukan lain',
+                FinanceEntryKind.withdrawal => e.note ?? 'Penarikan tabungan',
+              },
+              subtitle: switch (e.kind) {
+                FinanceEntryKind.expense => e.note == null ? null : e.category,
+                FinanceEntryKind.income => 'Pemasukan',
+                FinanceEntryKind.withdrawal => 'Dari tabungan',
+              },
+              amount: '${e.kind == FinanceEntryKind.income ? '+' : '−'}${formatRupiah(e.amount)}',
+              positive: e.kind == FinanceEntryKind.income,
+              onTap: e.kind == FinanceEntryKind.withdrawal ? null : () => showFinanceEntrySheet(context, kind: e.kind, date: e.date, entry: e),
             ),
           ],
         ),
-        const SizedBox(height: 26),
-        SectionLabel('PENGELUARAN TETAP', trailing: fixed.isEmpty ? null : formatRupiah(summary.fixedExpense)),
-        for (final r in fixed)
-          _Row(
-            leading: r.category,
-            title: r.title,
-            amount: formatRupiah(r.amount),
-            onTap: isCurrent ? () => showRecurringSheet(context, expense: r) : null,
-          ),
-        if (isCurrent)
-          _AddRow(label: 'Tambah pengeluaran tetap', onTap: () => showRecurringSheet(context))
-        else if (fixed.isEmpty)
-          const SectionHint('Tidak ada pengeluaran tetap di bulan ini.'),
-        const SizedBox(height: 22),
-        SectionLabel('TRANSAKSI', trailing: entries.isEmpty ? null : '${entries.length} catatan'),
-        if (entries.isEmpty) const SectionHint('Belum ada transaksi di bulan ini.'),
-        for (final e in entries)
-          _Row(
-            leading: DateFormat('d MMM', 'id_ID').format(e.date),
-            title: switch (e.kind) {
-              FinanceEntryKind.expense => e.note ?? e.category ?? 'Pengeluaran',
-              FinanceEntryKind.income => e.note ?? 'Pemasukan lain',
-              FinanceEntryKind.withdrawal => e.note ?? 'Penarikan tabungan',
-            },
-            subtitle: switch (e.kind) {
-              FinanceEntryKind.expense => e.note == null ? null : e.category,
-              FinanceEntryKind.income => 'Pemasukan',
-              FinanceEntryKind.withdrawal => 'Dari tabungan',
-            },
-            amount: '${e.kind == FinanceEntryKind.income ? '+' : '−'}${formatRupiah(e.amount)}',
-            positive: e.kind == FinanceEntryKind.income,
-            onTap: e.kind == FinanceEntryKind.withdrawal ? null : () => showFinanceEntrySheet(context, kind: e.kind, date: e.date, entry: e),
-          ),
       ],
     );
   }
@@ -542,13 +549,8 @@ class _PullableWalletState extends State<_PullableWallet> with SingleTickerProvi
   /// Geseran terjauh; makin dekat ke sini, tarikan terasa makin berat.
   static const maxOffset = 150.0;
 
-  final _link = LayerLink();
-  final _portal = OverlayPortalController();
   late final _spring = AnimationController(vsync: this, duration: const Duration(milliseconds: 650))
-    ..addListener(() => setState(() {}))
-    ..addStatusListener((status) {
-      if (status == AnimationStatus.completed) _portal.hide();
-    });
+    ..addListener(() => setState(() {}));
 
   double _pulled = 0;
   double _releasedAt = 0;
@@ -570,11 +572,8 @@ class _PullableWalletState extends State<_PullableWallet> with SingleTickerProvi
     return _releasedAt * (1 - Curves.elasticOut.transform(_spring.value));
   }
 
-  bool get _lifted => _dragging || _spring.isAnimating;
-
   void _start(DragStartDetails _) {
     _spring.stop();
-    _portal.show();
     setState(() {
       _dragging = true;
       _pulled = 0;
@@ -583,6 +582,7 @@ class _PullableWalletState extends State<_PullableWallet> with SingleTickerProvi
   }
 
   void _update(DragUpdateDetails d) {
+    if (!_dragging) return;
     setState(() => _pulled = math.max(0, _pulled + d.delta.dy));
     final armed = _dragOffset >= threshold;
     if (armed && !_armed) HapticFeedback.selectionClick();
@@ -590,6 +590,9 @@ class _PullableWalletState extends State<_PullableWallet> with SingleTickerProvi
   }
 
   void _end([DragEndDetails? _]) {
+    // onCancel juga datang untuk ketukan biasa yang tidak pernah menjadi
+    // tarikan; itu tidak perlu dipantulkan.
+    if (!_dragging) return;
     final fire = _armed;
     setState(() {
       _releasedAt = _dragOffset;
@@ -604,70 +607,99 @@ class _PullableWalletState extends State<_PullableWallet> with SingleTickerProvi
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final offset = _offset;
-    return LayoutBuilder(
-      builder: (context, constraints) => RawGestureDetector(
-        gestures: {
-          _DownwardDragRecognizer: GestureRecognizerFactoryWithHandlers<_DownwardDragRecognizer>(
-            () => _DownwardDragRecognizer(debugOwner: this),
-            (r) => r
-              ..onStart = _start
-              ..onUpdate = _update
-              ..onEnd = _end
-              ..onCancel = _end,
-          ),
-        },
-        child: OverlayPortal(
-          controller: _portal,
-          // Salinan kartu di lapisan atas, mengikuti posisi aslinya lalu
-          // bergeser turun; inilah yang menimpa isi di bawahnya.
-          overlayChildBuilder: (context) => Positioned(
-            left: 0,
-            top: 0,
-            width: constraints.maxWidth,
-            child: CompositedTransformFollower(
-              link: _link,
-              showWhenUnlinked: false,
-              offset: Offset(0, offset),
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: c.shadow.withValues(alpha: (c.isDark ? 0.45 : 0.16) * (offset / maxOffset).clamp(0.0, 1.0)),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: widget.child,
-                ),
+    return RawGestureDetector(
+      gestures: {
+        _DownwardDragRecognizer: GestureRecognizerFactoryWithHandlers<_DownwardDragRecognizer>(
+          () => _DownwardDragRecognizer(debugOwner: this),
+          (r) => r
+            ..onStart = _start
+            ..onUpdate = _update
+            ..onEnd = _end
+            ..onCancel = _end,
+        ),
+      },
+      // Kartunya sendiri yang bergeser (tanpa salinan di lapisan lain), jadi
+      // selalu tergambar; tempat aslinya tetap memegang ukuran.
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          if (offset > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 10,
+              child: Opacity(
+                opacity: (offset / 40).clamp(0.0, 1.0),
+                child: _PullHint(armed: _armed, progress: (offset / threshold).clamp(0.0, 1.0)),
               ),
             ),
-          ),
-          child: CompositedTransformTarget(
-            link: _link,
-            child: Stack(
-              children: [
-                // Tempat asli tetap memegang ukuran; isinya disembunyikan
-                // selama salinannya terangkat.
-                Opacity(opacity: _lifted ? 0 : 1, child: widget.child),
-                if (_lifted)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 10,
-                    child: Opacity(
-                      opacity: (offset / 40).clamp(0.0, 1.0),
-                      child: _PullHint(armed: _armed, progress: (offset / threshold).clamp(0.0, 1.0)),
-                    ),
-                  ),
-              ],
+          Transform.translate(
+            offset: Offset(0, offset),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: offset <= 1
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: c.shadow.withValues(alpha: (c.isDark ? 0.45 : 0.16) * (offset / maxOffset).clamp(0.0, 1.0)),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+              ),
+              child: widget.child,
             ),
           ),
-        ),
+        ],
       ),
     );
+  }
+}
+
+/// Kolom vertikal yang menggambar anak pertamanya paling akhir (dan
+/// mengujinya paling dulu untuk sentuhan), supaya dompet yang digeser turun
+/// tampil di atas isi di bawahnya.
+class _FrontFirstColumn extends Flex {
+  const _FrontFirstColumn({required super.children})
+      : super(direction: Axis.vertical, mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch);
+
+  @override
+  RenderFlex createRenderObject(BuildContext context) => _RenderFrontFirstFlex(
+        direction: direction,
+        mainAxisSize: mainAxisSize,
+        crossAxisAlignment: crossAxisAlignment,
+        textDirection: getEffectiveTextDirection(context),
+      );
+}
+
+class _RenderFrontFirstFlex extends RenderFlex {
+  _RenderFrontFirstFlex({super.direction, super.mainAxisSize, super.crossAxisAlignment, super.textDirection});
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final first = firstChild;
+    if (first == null) return;
+    var child = childAfter(first);
+    while (child != null) {
+      context.paintChild(child, (child.parentData! as FlexParentData).offset + offset);
+      child = childAfter(child);
+    }
+    context.paintChild(first, (first.parentData! as FlexParentData).offset + offset);
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    final first = firstChild;
+    if (first != null) {
+      final hit = result.addWithPaintOffset(
+        offset: (first.parentData! as FlexParentData).offset,
+        position: position,
+        hitTest: (result, transformed) => first.hitTest(result, position: transformed),
+      );
+      if (hit) return true;
+    }
+    return super.hitTestChildren(result, position: position);
   }
 }
 
