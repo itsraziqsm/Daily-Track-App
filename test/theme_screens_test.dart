@@ -16,6 +16,7 @@ import 'package:grou/models/daily_log.dart';
 import 'package:grou/models/finance.dart';
 import 'package:grou/providers/finance_provider.dart';
 import 'package:grou/screens/finance_tab.dart';
+import 'package:grou/screens/wallet_screen.dart';
 import 'package:grou/widgets/finance_sheets.dart';
 import 'package:grou/models/target.dart';
 import 'package:grou/providers/agenda_provider.dart';
@@ -309,9 +310,39 @@ void main() {
       final financeList = find.descendant(of: find.byType(FinanceTab), matching: find.byType(Scrollable)).first;
       await tester.scrollUntilVisible(find.text('Freelance desain'), 300, scrollable: financeList);
       await shot('4a_keuangan_transaksi');
-      await tester.scrollUntilVisible(find.text('PROYEKSI AKHIR TAHUN'), 300, scrollable: financeList);
-      await tester.drag(financeList, const Offset(0, -400));
-      await shot('4b_keuangan_tabungan');
+      expect(find.text('Dompet Saya'), findsNothing, reason: 'tombol baru muncul setelah dompet ditarik');
+
+      // Tarik dompet ke bawah: tahan di tengah tarikan untuk tangkapan
+      // layar, lalu lepas supaya tombol Dompet Saya muncul.
+      tester.state<ScrollableState>(financeList).position.jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(find.text('Dompet Saya'), findsNothing);
+      final pull = await tester.startGesture(tester.getCenter(find.textContaining('PROYEKSI')));
+      for (var i = 0; i < 12; i++) {
+        await pull.moveBy(const Offset(0, 30));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await tester.pump();
+      if (_screenshots) {
+        await expectLater(find.byType(MaterialApp), matchesGoldenFile('screenshots/${mode.name}_4b_keuangan_tarik.png'));
+      }
+      expect(find.text('Lepaskan untuk Dompet Saya'), findsOneWidget);
+      expect(find.text('Dompet Saya'), findsNothing, reason: 'belum dilepas');
+      await pull.up();
+      await tester.pumpAndSettle();
+      await shot('4b_keuangan_tombol_dompet');
+      expect(find.text('Dompet Saya'), findsOneWidget);
+
+      await tester.tap(find.text('Dompet Saya'));
+      await shot('4e_dompet_saya');
+      expect(find.byType(WalletScreen), findsOneWidget);
+      expect(find.text('Saldo saat ini'), findsOneWidget);
+      final walletList = find.descendant(of: find.byType(WalletScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('RATA-RATA BULANAN'), 300, scrollable: walletList);
+      await shot('4f_dompet_saya_rinci');
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Dompet Saya'), findsNothing, reason: 'tombol disembunyikan lagi setelah dipakai');
       showFinanceEntrySheet(navigatorKey.currentContext!, kind: FinanceEntryKind.expense, date: finance.today);
       await shot('4c_sheet_pengeluaran');
       navigatorKey.currentState!.pop();

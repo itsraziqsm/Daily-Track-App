@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,8 @@ import '../providers/finance_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/number_format.dart';
 import '../widgets/finance_sheets.dart';
-import '../widgets/target_card.dart' show TargetProgressBar;
+import '../widgets/section_parts.dart';
+import 'wallet_screen.dart';
 
 /// Tab "Keuangan" — pendapatan dan pengeluaran per bulan, rata-rata
 /// historisnya, saldo tabungan, dan proyeksi tabungan per tahun.
@@ -22,6 +24,51 @@ class FinanceTab extends StatefulWidget {
 class _FinanceTabState extends State<FinanceTab> {
   Month? _month;
 
+  /// Jarak tarik (overscroll di puncak daftar) agar tombol Dompet Saya
+  /// muncul saat dilepas.
+  static const _pullThreshold = 80.0;
+
+  double _pull = 0;
+  bool _armed = false;
+  bool _walletButton = false;
+
+  /// Daftar yang ditarik melewati puncaknya (bounce) menggeser dompet turun.
+  /// Melepasnya setelah melewati ambang memunculkan tombol Dompet Saya.
+  bool _onScroll(ScrollNotification n) {
+    if (n.depth != 0) return false;
+    if (n is ScrollUpdateNotification) {
+      final pull = (-n.metrics.pixels).clamp(0.0, 400.0);
+      if (n.dragDetails != null) {
+        final armed = pull >= _pullThreshold;
+        if (armed && !_armed) HapticFeedback.selectionClick();
+        setState(() {
+          _pull = pull;
+          _armed = armed;
+        });
+      } else {
+        if (_armed) _reveal();
+        if (pull != _pull) setState(() => _pull = pull);
+      }
+    } else if (n is ScrollEndNotification) {
+      if (_armed) _reveal();
+      if (_pull != 0) setState(() => _pull = 0);
+    }
+    return false;
+  }
+
+  void _reveal() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _armed = false;
+      _walletButton = true;
+    });
+  }
+
+  void _openWallet(Month month) {
+    setState(() => _walletButton = false);
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => WalletScreen(month: month)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -30,8 +77,6 @@ class _FinanceTabState extends State<FinanceTab> {
     final month = _month ?? current;
     final isCurrent = month == current;
     final summary = finance.summaryOf(month);
-    final avg = finance.average;
-    final categories = finance.byCategory(month).entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final entries = [
       ...finance.entriesIn(month, kind: FinanceEntryKind.expense),
       ...finance.entriesIn(month, kind: FinanceEntryKind.income),
@@ -44,114 +89,134 @@ class _FinanceTabState extends State<FinanceTab> {
     final now = finance.today;
     final newEntryDate = isCurrent ? now : month.start;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
-      children: [
-        Text('EXPENSES', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: c.inkMuted)),
-        const SizedBox(height: 5),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Text('Keuangan', style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: c.ink)),
-            ),
-            IconButton(
-              tooltip: 'Bulan sebelumnya',
-              icon: Icon(LucideIcons.chevronLeft, size: 20, color: c.orange),
-              onPressed: () => setState(() => _month = month.plus(-1)),
-            ),
-            IconButton(
-              tooltip: 'Bulan berikutnya',
-              icon: Icon(LucideIcons.chevronRight, size: 20, color: isCurrent ? c.lineSoft : c.orange),
-              onPressed: isCurrent ? null : () => setState(() => _month = month.plus(1)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _SummaryCard(
-          monthLabel: monthLabel[0].toUpperCase() + monthLabel.substring(1),
-          summary: summary,
-          isCurrent: isCurrent,
-          salary: finance.currentSalary,
-          onEditSalary: () => showAmountSheet(
-            context,
-            title: 'Gaji bulanan',
-            subtitle: 'Berlaku mulai bulan ini sampai diubah lagi. Bulan-bulan sebelumnya tetap memakai gaji lama.',
-            initial: finance.currentSalary,
-            onSave: finance.setSalary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _ActionButton(
-                icon: LucideIcons.minus,
-                label: 'Pengeluaran',
-                primary: true,
-                onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.expense, date: newEntryDate),
+    // Dompet turun lebih jauh dari isi lainnya saat ditarik, seperti ketapel.
+    final drop = _pull * 0.6;
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScroll,
+      child: ListView(
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
+        children: [
+          Text('EXPENSES', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: c.inkMuted)),
+          const SizedBox(height: 5),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text('Keuangan', style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: c.ink)),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _ActionButton(
-                icon: LucideIcons.plus,
-                label: 'Pemasukan lain',
-                onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.income, date: newEntryDate),
+              IconButton(
+                tooltip: 'Bulan sebelumnya',
+                icon: Icon(LucideIcons.chevronLeft, size: 20, color: c.orange),
+                onPressed: () => setState(() => _month = month.plus(-1)),
               ),
+              IconButton(
+                tooltip: 'Bulan berikutnya',
+                icon: Icon(LucideIcons.chevronRight, size: 20, color: isCurrent ? c.lineSoft : c.orange),
+                onPressed: isCurrent ? null : () => setState(() => _month = month.plus(1)),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 12 + drop,
+            child: drop < 18
+                ? null
+                : _PullHint(armed: _armed, progress: (_pull / _pullThreshold).clamp(0.0, 1.0)),
+          ),
+          _SummaryCard(
+            monthLabel: monthLabel[0].toUpperCase() + monthLabel.substring(1),
+            summary: summary,
+            isCurrent: isCurrent,
+            salary: finance.currentSalary,
+            onEditSalary: () => showAmountSheet(
+              context,
+              title: 'Gaji bulanan',
+              subtitle: 'Berlaku mulai bulan ini sampai diubah lagi. Bulan-bulan sebelumnya tetap memakai gaji lama.',
+              initial: finance.currentSalary,
+              onSave: finance.setSalary,
             ),
-          ],
-        ),
-        const SizedBox(height: 26),
-        _Section('PER KATEGORI', trailing: avg.months > 0 ? 'vs rata-rata' : null),
-        if (categories.isEmpty) const _Hint('Belum ada pengeluaran di bulan ini.'),
-        for (final e in categories)
-          _CategoryRow(
-            category: e.key,
-            amount: e.value,
-            max: categories.first.value,
-            average: avg.byCategory[e.key] ?? 0,
           ),
-        const SizedBox(height: 22),
-        _Section('PENGELUARAN TETAP', trailing: fixed.isEmpty ? null : formatRupiah(summary.fixedExpense)),
-        for (final r in fixed)
-          _Row(
-            leading: r.category,
-            title: r.title,
-            amount: formatRupiah(r.amount),
-            onTap: isCurrent ? () => showRecurringSheet(context, expense: r) : null,
+          AnimatedSize(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutBack,
+            alignment: Alignment.topCenter,
+            child: _walletButton
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: _WalletButton(onTap: () => _openWallet(month)),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.chevronsDown, size: 13, color: c.inkMuted2),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Tarik dompet untuk membuka Dompet Saya',
+                          style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
-        if (isCurrent)
-          _AddRow(label: 'Tambah pengeluaran tetap', onTap: () => showRecurringSheet(context))
-        else if (fixed.isEmpty)
-          const _Hint('Tidak ada pengeluaran tetap di bulan ini.'),
-        const SizedBox(height: 22),
-        _Section('TRANSAKSI', trailing: entries.isEmpty ? null : '${entries.length} catatan'),
-        if (entries.isEmpty) const _Hint('Belum ada transaksi di bulan ini.'),
-        for (final e in entries)
-          _Row(
-            leading: DateFormat('d MMM', 'id_ID').format(e.date),
-            title: switch (e.kind) {
-              FinanceEntryKind.expense => e.note ?? e.category ?? 'Pengeluaran',
-              FinanceEntryKind.income => e.note ?? 'Pemasukan lain',
-              FinanceEntryKind.withdrawal => e.note ?? 'Penarikan tabungan',
-            },
-            subtitle: switch (e.kind) {
-              FinanceEntryKind.expense => e.note == null ? null : e.category,
-              FinanceEntryKind.income => 'Pemasukan',
-              FinanceEntryKind.withdrawal => 'Dari tabungan',
-            },
-            amount: '${e.kind == FinanceEntryKind.income ? '+' : '−'}${formatRupiah(e.amount)}',
-            positive: e.kind == FinanceEntryKind.income,
-            onTap: e.kind == FinanceEntryKind.withdrawal ? null : () => showFinanceEntrySheet(context, kind: e.kind, date: e.date, entry: e),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  icon: LucideIcons.minus,
+                  label: 'Pengeluaran',
+                  primary: true,
+                  onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.expense, date: newEntryDate),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ActionButton(
+                  icon: LucideIcons.plus,
+                  label: 'Pemasukan lain',
+                  onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.income, date: newEntryDate),
+                ),
+              ),
+            ],
           ),
-        const SizedBox(height: 22),
-        const _Section('RATA-RATA BULANAN'),
-        _AverageCard(average: avg),
-        const SizedBox(height: 22),
-        const _Section('TABUNGAN'),
-        _SavingsCard(finance: finance),
-      ],
+          const SizedBox(height: 26),
+          SectionLabel('PENGELUARAN TETAP', trailing: fixed.isEmpty ? null : formatRupiah(summary.fixedExpense)),
+          for (final r in fixed)
+            _Row(
+              leading: r.category,
+              title: r.title,
+              amount: formatRupiah(r.amount),
+              onTap: isCurrent ? () => showRecurringSheet(context, expense: r) : null,
+            ),
+          if (isCurrent)
+            _AddRow(label: 'Tambah pengeluaran tetap', onTap: () => showRecurringSheet(context))
+          else if (fixed.isEmpty)
+            const SectionHint('Tidak ada pengeluaran tetap di bulan ini.'),
+          const SizedBox(height: 22),
+          SectionLabel('TRANSAKSI', trailing: entries.isEmpty ? null : '${entries.length} catatan'),
+          if (entries.isEmpty) const SectionHint('Belum ada transaksi di bulan ini.'),
+          for (final e in entries)
+            _Row(
+              leading: DateFormat('d MMM', 'id_ID').format(e.date),
+              title: switch (e.kind) {
+                FinanceEntryKind.expense => e.note ?? e.category ?? 'Pengeluaran',
+                FinanceEntryKind.income => e.note ?? 'Pemasukan lain',
+                FinanceEntryKind.withdrawal => e.note ?? 'Penarikan tabungan',
+              },
+              subtitle: switch (e.kind) {
+                FinanceEntryKind.expense => e.note == null ? null : e.category,
+                FinanceEntryKind.income => 'Pemasukan',
+                FinanceEntryKind.withdrawal => 'Dari tabungan',
+              },
+              amount: '${e.kind == FinanceEntryKind.income ? '+' : '−'}${formatRupiah(e.amount)}',
+              positive: e.kind == FinanceEntryKind.income,
+              onTap: e.kind == FinanceEntryKind.withdrawal ? null : () => showFinanceEntrySheet(context, kind: e.kind, date: e.date, entry: e),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -186,7 +251,9 @@ class _SummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isCurrent ? 'SISA $monthLabel (BERJALAN)'.toUpperCase() : 'SISA $monthLabel'.toUpperCase(),
+            // Bulan berjalan: perkiraan sisa akhir bulan dari yang sudah
+            // tercatat; bulan yang sudah lewat: sisa sebenarnya.
+            isCurrent ? 'PROYEKSI $monthLabel'.toUpperCase() : 'SISA $monthLabel'.toUpperCase(),
             style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: c.yellowInk3),
           ),
           const SizedBox(height: 4),
@@ -334,76 +401,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-class _Section extends StatelessWidget {
-  final String text;
-  final String? trailing;
-  const _Section(this.text, {this.trailing});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 11),
-      child: Row(
-        children: [
-          Expanded(child: Text(text, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted))),
-          if (trailing != null) Text(trailing!, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, color: c.inkMuted2)),
-        ],
-      ),
-    );
-  }
-}
-
-class _Hint extends StatelessWidget {
-  final String text;
-  const _Hint(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text, style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12.5, fontWeight: FontWeight.w600, color: c.inkMuted)),
-    );
-  }
-}
-
-class _CategoryRow extends StatelessWidget {
-  final String category;
-  final double amount;
-  final double max;
-  final double average;
-  const _CategoryRow({required this.category, required this.amount, required this.max, required this.average});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Expanded(child: Text(category, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.ink))),
-              Text(formatRupiah(amount), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: c.ink)),
-            ],
-          ),
-          const SizedBox(height: 5),
-          TargetProgressBar(fraction: max <= 0 ? 0 : amount / max),
-          const SizedBox(height: 3),
-          Text(
-            average > 0 ? 'Rata-rata ${formatRupiah(average)} / bulan' : 'Belum ada rata-rata',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w600, color: c.inkMuted2),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Row extends StatelessWidget {
   final String leading;
   final String title;
@@ -481,126 +478,76 @@ class _AddRow extends StatelessWidget {
   }
 }
 
-class _AverageCard extends StatelessWidget {
-  final MonthlyAverage average;
-  const _AverageCard({required this.average});
+/// Petunjuk yang muncul di celah antara judul dan dompet saat ditarik.
+class _PullHint extends StatelessWidget {
+  final bool armed;
+  final double progress;
+  const _PullHint({required this.armed, required this.progress});
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final a = average;
-    Widget line(String label, String value, {bool strong = false}) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Expanded(child: Text(label, style: TextStyle(fontSize: 13, fontWeight: strong ? FontWeight.w800 : FontWeight.w600, color: strong ? c.ink : c.inkMuted3))),
-              Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: c.ink)),
-            ],
-          ),
-        );
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: BoxDecoration(color: c.card, border: Border.all(color: c.line, width: 1.5), borderRadius: BorderRadius.circular(18)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            a.provisional ? 'Perkiraan dari bulan berjalan — belum ada bulan yang selesai' : 'Dari ${a.months} bulan yang sudah selesai',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2),
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 2,
+              color: armed ? c.orange : c.inkMuted2,
+              backgroundColor: c.lineSoft,
+            ),
           ),
-          const SizedBox(height: 6),
-          line('Pendapatan', formatRupiah(a.income)),
-          line('Pengeluaran tetap', '−${formatRupiah(a.fixedExpense)}'),
-          line('Pengeluaran tidak tetap', '−${formatRupiah(a.variableExpense)}'),
-          Divider(height: 14, color: c.line),
-          line('Sisa per bulan', formatRupiah(a.surplus), strong: true),
+          const SizedBox(width: 8),
+          Text(
+            armed ? 'Lepaskan untuk Dompet Saya' : 'Tarik untuk Dompet Saya',
+            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w700, color: armed ? c.orangeChipInk : c.inkMuted),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SavingsCard extends StatelessWidget {
-  final FinanceProvider finance;
-  const _SavingsCard({required this.finance});
+class _WalletButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _WalletButton({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final balance = finance.balance;
-    final running = finance.summaryOf(finance.currentMonth).surplus;
-    final projection = finance.projection();
-    final perMonth = finance.average.surplus;
-    final maxBalance = projection.map((p) => p.balance).fold(balance, (a, b) => a > b ? a : b);
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(color: c.card, border: Border.all(color: c.line, width: 1.5), borderRadius: BorderRadius.circular(18)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Saldo saat ini', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, color: c.inkMuted)),
-                    const SizedBox(height: 2),
-                    Text(formatRupiah(balance), style: TextStyle(fontFamily: AppFonts.title, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: c.ink)),
-                    Text(
-                      'S.d. akhir bulan lalu · bulan ini ${running >= 0 ? '+' : ''}${formatRupiah(running)} berjalan',
-                      style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2),
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: () => showAmountSheet(
-                  context,
-                  title: 'Saldo tabungan',
-                  subtitle: 'Isi saldo tabungan nyata saat ini. Sisa tiap bulan berikutnya akan ditambahkan otomatis.',
-                  initial: balance,
-                  onSave: finance.setBalance,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-                  decoration: BoxDecoration(color: c.rowBg, border: Border.all(color: c.line), borderRadius: BorderRadius.circular(11)),
-                  child: Text('Atur saldo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: c.ink)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'PROYEKSI AKHIR TAHUN',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 1, color: c.inkMuted),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            perMonth > 0
-                ? 'Bila sisa tetap ${formatRupiah(perMonth)} per bulan seperti rata-rata selama ini'
-                : 'Dengan rata-rata saat ini sisa per bulan ${formatRupiah(perMonth)}, jadi tabungan tidak bertambah',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2, height: 1.35),
-          ),
-          const SizedBox(height: 10),
-          for (final p in projection)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        decoration: BoxDecoration(
+          color: c.card,
+          border: Border.all(color: c.yellow, width: 1.5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(LucideIcons.wallet, size: 18, color: c.yellowInk2),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: 44, child: Text('${p.year}', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: c.ink))),
-                  Expanded(child: TargetProgressBar(fraction: maxBalance <= 0 ? 0 : p.balance / maxBalance)),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    width: 86,
-                    child: Text(formatRupiahShort(p.balance), textAlign: TextAlign.right, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: c.ink)),
+                  Text('Dompet Saya', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: c.ink)),
+                  Text(
+                    'Tabungan, proyeksi, per kategori, rata-rata',
+                    style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted),
                   ),
                 ],
               ),
             ),
-        ],
+            Icon(LucideIcons.chevronRight, size: 18, color: c.inkMuted2),
+          ],
+        ),
       ),
     );
   }

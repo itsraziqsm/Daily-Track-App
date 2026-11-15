@@ -17,8 +17,12 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
   - **Pengeluaran tetap** (kos, cicilan, langganan) diisi sekali dan otomatis terhitung tiap
     bulan; mengubah jumlahnya berlaku mulai bulan ini. **Pengeluaran tidak tetap** dicatat per
     transaksi dengan kategori.
-  - Ringkasan per bulan: pendapatan − pengeluaran (tetap / tidak tetap) = sisa, rincian per
-    kategori dibanding rata-ratanya; bulan sebelumnya bisa dibuka lewat tombol bulan.
+  - Halaman utamanya ringkas: **dompet** (proyeksi sisa bulan berjalan, atau sisa bulan yang sudah
+    lewat: pendapatan − pengeluaran tetap / tidak tetap), tombol pengeluaran & pemasukan,
+    pengeluaran tetap, dan transaksi. Bulan sebelumnya bisa dibuka lewat tombol bulan.
+  - **Tarik dompet ke bawah** lalu lepas (memantul seperti pull-to-refresh) untuk memunculkan
+    tombol **Dompet Saya**: tabungan nyata dan proyeksinya, pengeluaran per kategori dibanding
+    rata-ratanya, dan rata-rata bulanan.
   - **Rata-rata bulanan** dari bulan-bulan yang sudah selesai (bulan berjalan tidak ikut, kecuali
     belum ada bulan yang selesai, sebagai perkiraan sementara).
   - **Saldo tabungan** = saldo yang diisi + sisa tiap bulan yang sudah selesai − penarikan
@@ -135,7 +139,8 @@ lib/
     stats_screen.dart            # Pengaturan → Lainnya → Statistik
     cancellation_log_screen.dart # Pengaturan → Lainnya → Log pembatalan
     settings_screen.dart         # Pengaturan (dibuka dari ikon profil)
-    finance_tab.dart             # Keuangan: ringkasan bulan, rata-rata, tabungan & proyeksi
+    finance_tab.dart             # Keuangan: dompet, pengeluaran tetap, transaksi
+    wallet_screen.dart           # Dompet Saya: tabungan & proyeksi, per kategori, rata-rata
     notification_feed_screen.dart
   widgets/                       # ActivityTile, sheet alasan batal / zona waktu / tema, ring chart
   theme/app_theme.dart           # palet terang & gelap (ThemeExtension) dan ThemeData
