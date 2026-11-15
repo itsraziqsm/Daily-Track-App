@@ -28,8 +28,9 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
   - Halaman utamanya ringkas: **dompet** (proyeksi sisa bulan berjalan, atau sisa bulan yang sudah
     lewat: pendapatan − pengeluaran tetap / tidak tetap), tombol pengeluaran & pemasukan,
     pengeluaran tetap, dan transaksi. Bulan sebelumnya bisa dibuka lewat tombol bulan.
-  - **Tarik dompet ke bawah** lalu lepas (memantul seperti pull-to-refresh) untuk memunculkan
-    tombol **Dompet Saya**: tabungan nyata dan proyeksinya, pengeluaran per kategori dibanding
+  - **Tarik dompet ke bawah** lalu lepas: hanya kartu dompet yang bergerak (menimpa isi di
+    bawahnya, halaman tetap diam) dan memantul kembali seperti ketapel, lalu tombol **Dompet Saya**
+    muncul di atas dompet. Tarikan ke atas pada kartu tetap menggulir halaman. Dompet Saya berisi tabungan nyata dan proyeksinya, pengeluaran per kategori dibanding
     rata-ratanya, dan rata-rata bulanan.
   - **Rata-rata bulanan** dari bulan-bulan yang sudah selesai (bulan berjalan tidak ikut, kecuali
     belum ada bulan yang selesai, sebagai perkiraan sementara).

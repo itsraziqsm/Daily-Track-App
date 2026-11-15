@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -26,44 +29,11 @@ class FinanceTab extends StatefulWidget {
 class _FinanceTabState extends State<FinanceTab> {
   Month? _month;
 
-  /// Jarak tarik (overscroll di puncak daftar) agar tombol Dompet Saya
-  /// muncul saat dilepas.
-  static const _pullThreshold = 80.0;
-
-  double _pull = 0;
-  bool _armed = false;
   bool _walletButton = false;
-
-  /// Daftar yang ditarik melewati puncaknya (bounce) menggeser dompet turun.
-  /// Melepasnya setelah melewati ambang memunculkan tombol Dompet Saya.
-  bool _onScroll(ScrollNotification n) {
-    if (n.depth != 0) return false;
-    if (n is ScrollUpdateNotification) {
-      final pull = (-n.metrics.pixels).clamp(0.0, 400.0);
-      if (n.dragDetails != null) {
-        final armed = pull >= _pullThreshold;
-        if (armed && !_armed) HapticFeedback.selectionClick();
-        setState(() {
-          _pull = pull;
-          _armed = armed;
-        });
-      } else {
-        if (_armed) _reveal();
-        if (pull != _pull) setState(() => _pull = pull);
-      }
-    } else if (n is ScrollEndNotification) {
-      if (_armed) _reveal();
-      if (_pull != 0) setState(() => _pull = 0);
-    }
-    return false;
-  }
 
   void _reveal() {
     HapticFeedback.mediumImpact();
-    setState(() {
-      _armed = false;
-      _walletButton = true;
-    });
+    setState(() => _walletButton = true);
   }
 
   Future<void> _openWallet(Month month) async {
@@ -96,42 +66,45 @@ class _FinanceTabState extends State<FinanceTab> {
     final now = finance.today;
     final newEntryDate = isCurrent ? now : month.start;
 
-    // Dompet turun lebih jauh dari isi lainnya saat ditarik, seperti ketapel.
-    final drop = _pull * 0.6;
-
-    return NotificationListener<ScrollNotification>(
-      onNotification: _onScroll,
-      child: ListView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
-        children: [
-          Text('EXPENSES', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: c.inkMuted)),
-          const SizedBox(height: 5),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Text('Keuangan', style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: c.ink)),
-              ),
-              IconButton(
-                tooltip: 'Bulan sebelumnya',
-                icon: Icon(LucideIcons.chevronLeft, size: 20, color: c.orange),
-                onPressed: () => setState(() => _month = month.plus(-1)),
-              ),
-              IconButton(
-                tooltip: 'Bulan berikutnya',
-                icon: Icon(LucideIcons.chevronRight, size: 20, color: isCurrent ? c.lineSoft : c.orange),
-                onPressed: isCurrent ? null : () => setState(() => _month = month.plus(1)),
-              ),
-            ],
-          ),
-          SizedBox(
-            height: 12 + drop,
-            child: drop < 18
-                ? null
-                : _PullHint(armed: _armed, progress: (_pull / _pullThreshold).clamp(0.0, 1.0)),
-          ),
-          _SummaryCard(
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
+      children: [
+        Text('EXPENSES', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: c.inkMuted)),
+        const SizedBox(height: 5),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Text('Keuangan', style: TextStyle(fontFamily: AppFonts.title, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: c.ink)),
+            ),
+            IconButton(
+              tooltip: 'Bulan sebelumnya',
+              icon: Icon(LucideIcons.chevronLeft, size: 20, color: c.orange),
+              onPressed: () => setState(() => _month = month.plus(-1)),
+            ),
+            IconButton(
+              tooltip: 'Bulan berikutnya',
+              icon: Icon(LucideIcons.chevronRight, size: 20, color: isCurrent ? c.lineSoft : c.orange),
+              onPressed: isCurrent ? null : () => setState(() => _month = month.plus(1)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Tombol Dompet Saya muncul di atas dompet setelah dompet ditarik.
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
+          alignment: Alignment.topCenter,
+          child: _walletButton
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _WalletButton(onTap: () => _openWallet(month)),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+        _PullableWallet(
+          onPulled: _reveal,
+          child: _SummaryCard(
             monthLabel: monthLabel[0].toUpperCase() + monthLabel.substring(1),
             summary: summary,
             isCurrent: isCurrent,
@@ -144,86 +117,77 @@ class _FinanceTabState extends State<FinanceTab> {
               onSave: finance.setSalary,
             ),
           ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutBack,
-            alignment: Alignment.topCenter,
-            child: _walletButton
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: _WalletButton(onTap: () => _openWallet(month)),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(LucideIcons.chevronsDown, size: 13, color: c.inkMuted2),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Tarik dompet untuk membuka Dompet Saya',
-                          style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _ActionButton(
-                  icon: LucideIcons.minus,
-                  label: 'Pengeluaran',
-                  primary: true,
-                  onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.expense, date: newEntryDate),
+        ),
+        if (!_walletButton)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(LucideIcons.chevronsDown, size: 13, color: c.inkMuted2),
+                const SizedBox(width: 4),
+                Text(
+                  'Tarik dompet ke bawah untuk Dompet Saya',
+                  style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w600, color: c.inkMuted2),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ActionButton(
-                  icon: LucideIcons.plus,
-                  label: 'Pemasukan lain',
-                  onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.income, date: newEntryDate),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 26),
-          SectionLabel('PENGELUARAN TETAP', trailing: fixed.isEmpty ? null : formatRupiah(summary.fixedExpense)),
-          for (final r in fixed)
-            _Row(
-              leading: r.category,
-              title: r.title,
-              amount: formatRupiah(r.amount),
-              onTap: isCurrent ? () => showRecurringSheet(context, expense: r) : null,
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionButton(
+                icon: LucideIcons.minus,
+                label: 'Pengeluaran',
+                primary: true,
+                onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.expense, date: newEntryDate),
+              ),
             ),
-          if (isCurrent)
-            _AddRow(label: 'Tambah pengeluaran tetap', onTap: () => showRecurringSheet(context))
-          else if (fixed.isEmpty)
-            const SectionHint('Tidak ada pengeluaran tetap di bulan ini.'),
-          const SizedBox(height: 22),
-          SectionLabel('TRANSAKSI', trailing: entries.isEmpty ? null : '${entries.length} catatan'),
-          if (entries.isEmpty) const SectionHint('Belum ada transaksi di bulan ini.'),
-          for (final e in entries)
-            _Row(
-              leading: DateFormat('d MMM', 'id_ID').format(e.date),
-              title: switch (e.kind) {
-                FinanceEntryKind.expense => e.note ?? e.category ?? 'Pengeluaran',
-                FinanceEntryKind.income => e.note ?? 'Pemasukan lain',
-                FinanceEntryKind.withdrawal => e.note ?? 'Penarikan tabungan',
-              },
-              subtitle: switch (e.kind) {
-                FinanceEntryKind.expense => e.note == null ? null : e.category,
-                FinanceEntryKind.income => 'Pemasukan',
-                FinanceEntryKind.withdrawal => 'Dari tabungan',
-              },
-              amount: '${e.kind == FinanceEntryKind.income ? '+' : '−'}${formatRupiah(e.amount)}',
-              positive: e.kind == FinanceEntryKind.income,
-              onTap: e.kind == FinanceEntryKind.withdrawal ? null : () => showFinanceEntrySheet(context, kind: e.kind, date: e.date, entry: e),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _ActionButton(
+                icon: LucideIcons.plus,
+                label: 'Pemasukan lain',
+                onTap: () => showFinanceEntrySheet(context, kind: FinanceEntryKind.income, date: newEntryDate),
+              ),
             ),
-        ],
-      ),
+          ],
+        ),
+        const SizedBox(height: 26),
+        SectionLabel('PENGELUARAN TETAP', trailing: fixed.isEmpty ? null : formatRupiah(summary.fixedExpense)),
+        for (final r in fixed)
+          _Row(
+            leading: r.category,
+            title: r.title,
+            amount: formatRupiah(r.amount),
+            onTap: isCurrent ? () => showRecurringSheet(context, expense: r) : null,
+          ),
+        if (isCurrent)
+          _AddRow(label: 'Tambah pengeluaran tetap', onTap: () => showRecurringSheet(context))
+        else if (fixed.isEmpty)
+          const SectionHint('Tidak ada pengeluaran tetap di bulan ini.'),
+        const SizedBox(height: 22),
+        SectionLabel('TRANSAKSI', trailing: entries.isEmpty ? null : '${entries.length} catatan'),
+        if (entries.isEmpty) const SectionHint('Belum ada transaksi di bulan ini.'),
+        for (final e in entries)
+          _Row(
+            leading: DateFormat('d MMM', 'id_ID').format(e.date),
+            title: switch (e.kind) {
+              FinanceEntryKind.expense => e.note ?? e.category ?? 'Pengeluaran',
+              FinanceEntryKind.income => e.note ?? 'Pemasukan lain',
+              FinanceEntryKind.withdrawal => e.note ?? 'Penarikan tabungan',
+            },
+            subtitle: switch (e.kind) {
+              FinanceEntryKind.expense => e.note == null ? null : e.category,
+              FinanceEntryKind.income => 'Pemasukan',
+              FinanceEntryKind.withdrawal => 'Dari tabungan',
+            },
+            amount: '${e.kind == FinanceEntryKind.income ? '+' : '−'}${formatRupiah(e.amount)}',
+            positive: e.kind == FinanceEntryKind.income,
+            onTap: e.kind == FinanceEntryKind.withdrawal ? null : () => showFinanceEntrySheet(context, kind: e.kind, date: e.date, entry: e),
+          ),
+      ],
     );
   }
 }
@@ -485,40 +449,6 @@ class _AddRow extends StatelessWidget {
   }
 }
 
-/// Petunjuk yang muncul di celah antara judul dan dompet saat ditarik.
-class _PullHint extends StatelessWidget {
-  final bool armed;
-  final double progress;
-  const _PullHint({required this.armed, required this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Center(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              value: progress,
-              strokeWidth: 2,
-              color: armed ? c.orange : c.inkMuted2,
-              backgroundColor: c.lineSoft,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            armed ? 'Lepaskan untuk Dompet Saya' : 'Tarik untuk Dompet Saya',
-            style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w700, color: armed ? c.orangeChipInk : c.inkMuted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _WalletButton extends StatelessWidget {
   final VoidCallback onTap;
   const _WalletButton({required this.onTap});
@@ -556,6 +486,219 @@ class _WalletButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Pengenal seret vertikal yang hanya mengklaim tarikan ke bawah. Bila jari
+/// lebih dulu bergerak ke atas, ia mundur dari arena sehingga daftar di
+/// belakangnya tetap bisa digulir seperti biasa.
+class _DownwardDragRecognizer extends VerticalDragGestureRecognizer {
+  _DownwardDragRecognizer({super.debugOwner});
+
+  double _dy = 0;
+  bool _decided = false;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    _dy = 0;
+    _decided = false;
+    super.addAllowedPointer(event);
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (!_decided && event is PointerMoveEvent) {
+      _dy += event.delta.dy;
+      if (_dy < -1) {
+        _decided = true;
+        resolve(GestureDisposition.rejected);
+        stopTrackingPointer(event.pointer);
+        return;
+      }
+      if (_dy > 1) _decided = true;
+    }
+    super.handleEvent(event);
+  }
+}
+
+/// Dompet yang bisa ditarik ke bawah seperti ketapel. Hanya kartunya yang
+/// bergerak, dan selama ditarik ia digambar di lapisan atas sehingga menimpa
+/// isi di bawahnya. Dilepas setelah melewati ambang memanggil [onPulled];
+/// kartu lalu memantul kembali ke tempatnya.
+class _PullableWallet extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onPulled;
+  const _PullableWallet({required this.child, required this.onPulled});
+
+  @override
+  State<_PullableWallet> createState() => _PullableWalletState();
+}
+
+class _PullableWalletState extends State<_PullableWallet> with SingleTickerProviderStateMixin {
+  /// Geseran kartu yang harus dicapai agar tarikan dihitung.
+  static const threshold = 64.0;
+
+  /// Geseran terjauh; makin dekat ke sini, tarikan terasa makin berat.
+  static const maxOffset = 150.0;
+
+  final _link = LayerLink();
+  final _portal = OverlayPortalController();
+  late final _spring = AnimationController(vsync: this, duration: const Duration(milliseconds: 650))
+    ..addListener(() => setState(() {}))
+    ..addStatusListener((status) {
+      if (status == AnimationStatus.completed) _portal.hide();
+    });
+
+  double _pulled = 0;
+  double _releasedAt = 0;
+  bool _dragging = false;
+  bool _armed = false;
+
+  @override
+  void dispose() {
+    _spring.dispose();
+    super.dispose();
+  }
+
+  /// Geseran kartu dari jarak jari, dengan hambatan seperti karet.
+  double get _dragOffset => maxOffset * (1 - math.exp(-_pulled / maxOffset));
+
+  double get _offset {
+    if (_dragging) return _dragOffset;
+    if (!_spring.isAnimating) return 0;
+    return _releasedAt * (1 - Curves.elasticOut.transform(_spring.value));
+  }
+
+  bool get _lifted => _dragging || _spring.isAnimating;
+
+  void _start(DragStartDetails _) {
+    _spring.stop();
+    _portal.show();
+    setState(() {
+      _dragging = true;
+      _pulled = 0;
+      _armed = false;
+    });
+  }
+
+  void _update(DragUpdateDetails d) {
+    setState(() => _pulled = math.max(0, _pulled + d.delta.dy));
+    final armed = _dragOffset >= threshold;
+    if (armed && !_armed) HapticFeedback.selectionClick();
+    if (armed != _armed) setState(() => _armed = armed);
+  }
+
+  void _end([DragEndDetails? _]) {
+    final fire = _armed;
+    setState(() {
+      _releasedAt = _dragOffset;
+      _dragging = false;
+      _armed = false;
+    });
+    _spring.forward(from: 0);
+    if (fire) widget.onPulled();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final offset = _offset;
+    return LayoutBuilder(
+      builder: (context, constraints) => RawGestureDetector(
+        gestures: {
+          _DownwardDragRecognizer: GestureRecognizerFactoryWithHandlers<_DownwardDragRecognizer>(
+            () => _DownwardDragRecognizer(debugOwner: this),
+            (r) => r
+              ..onStart = _start
+              ..onUpdate = _update
+              ..onEnd = _end
+              ..onCancel = _end,
+          ),
+        },
+        child: OverlayPortal(
+          controller: _portal,
+          // Salinan kartu di lapisan atas, mengikuti posisi aslinya lalu
+          // bergeser turun; inilah yang menimpa isi di bawahnya.
+          overlayChildBuilder: (context) => Positioned(
+            left: 0,
+            top: 0,
+            width: constraints.maxWidth,
+            child: CompositedTransformFollower(
+              link: _link,
+              showWhenUnlinked: false,
+              offset: Offset(0, offset),
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: c.shadow.withValues(alpha: (c.isDark ? 0.45 : 0.16) * (offset / maxOffset).clamp(0.0, 1.0)),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: widget.child,
+                ),
+              ),
+            ),
+          ),
+          child: CompositedTransformTarget(
+            link: _link,
+            child: Stack(
+              children: [
+                // Tempat asli tetap memegang ukuran; isinya disembunyikan
+                // selama salinannya terangkat.
+                Opacity(opacity: _lifted ? 0 : 1, child: widget.child),
+                if (_lifted)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: 10,
+                    child: Opacity(
+                      opacity: (offset / 40).clamp(0.0, 1.0),
+                      child: _PullHint(armed: _armed, progress: (offset / threshold).clamp(0.0, 1.0)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Petunjuk yang tampak di tempat asli dompet saat kartunya ditarik turun.
+class _PullHint extends StatelessWidget {
+  final bool armed;
+  final double progress;
+  const _PullHint({required this.armed, required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            value: progress,
+            strokeWidth: 2,
+            color: armed ? c.orange : c.inkMuted2,
+            backgroundColor: c.lineSoft,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          armed ? 'Lepaskan untuk Dompet Saya' : 'Tarik untuk Dompet Saya',
+          style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 12, fontWeight: FontWeight.w700, color: armed ? c.orangeChipInk : c.inkMuted),
+        ),
+      ],
     );
   }
 }

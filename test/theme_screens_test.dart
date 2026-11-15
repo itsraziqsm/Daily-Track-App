@@ -324,12 +324,15 @@ void main() {
       tester.state<ScrollableState>(financeList).position.jumpTo(0);
       await tester.pumpAndSettle();
       expect(find.text('Dompet Saya'), findsNothing);
+      final titleTop = tester.getTopLeft(find.text('Keuangan')).dy;
       final pull = await tester.startGesture(tester.getCenter(find.textContaining('PROYEKSI')));
       for (var i = 0; i < 12; i++) {
         await pull.moveBy(const Offset(0, 30));
         await tester.pump(const Duration(milliseconds: 16));
       }
       await tester.pump();
+      expect(tester.getTopLeft(find.text('Keuangan')).dy, titleTop, reason: 'hanya dompet yang bergerak, halaman diam');
+      expect(tester.state<ScrollableState>(financeList).position.pixels, 0);
       if (_screenshots) {
         await expectLater(find.byType(MaterialApp), matchesGoldenFile('screenshots/${mode.name}_4b_keuangan_tarik.png'));
       }
@@ -339,6 +342,15 @@ void main() {
       await tester.pumpAndSettle();
       await shot('4b_keuangan_tombol_dompet');
       expect(find.text('Dompet Saya'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('Dompet Saya')).dy, lessThan(tester.getTopLeft(find.textContaining('PROYEKSI')).dy),
+          reason: 'tombol tampil di atas dompet');
+
+      // Tarikan ke atas di atas kartu tetap menggulir halaman.
+      await tester.drag(find.textContaining('PROYEKSI'), const Offset(0, -200));
+      await tester.pumpAndSettle();
+      expect(tester.state<ScrollableState>(financeList).position.pixels, greaterThan(0));
+      tester.state<ScrollableState>(financeList).position.jumpTo(0);
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Dompet Saya'));
       await shot('4e_dompet_saya');
