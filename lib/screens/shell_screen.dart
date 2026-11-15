@@ -6,7 +6,9 @@ import '../providers/agenda_provider.dart';
 import '../providers/finance_provider.dart';
 import '../providers/schedule_provider.dart';
 import '../providers/target_provider.dart';
+import '../services/app_lock.dart';
 import '../theme/app_theme.dart';
+import '../widgets/lock_screen.dart';
 import 'agenda_tab.dart';
 import 'finance_tab.dart';
 import 'home_tab.dart';
@@ -120,9 +122,9 @@ class _ShellScreenState extends State<ShellScreen> {
         onPageChanged: (index) => setState(() => _tab = index),
         children: const [
           _KeepAlive(child: HomeTab()),
-          _KeepAlive(child: AgendaTab()),
-          _KeepAlive(child: TargetTab()),
-          _KeepAlive(child: FinanceTab()),
+          _KeepAlive(child: LockedArea(area: LockArea.agenda, child: AgendaTab())),
+          _KeepAlive(child: LockedArea(area: LockArea.target, child: TargetTab())),
+          _KeepAlive(child: LockedArea(area: LockArea.finance, child: FinanceTab())),
         ],
       ),
       bottomNavigationBar: Container(

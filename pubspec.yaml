@@ -27,6 +27,8 @@ dependencies:
   # Notifikasi lokal terjadwal + zona waktu untuk penjadwalannya.
   flutter_local_notifications: ^19.0.0
   timezone: ^0.10.0
+  local_auth: ^3.0.2
+  crypto: ^3.0.8
 
 dev_dependencies:
   flutter_test:

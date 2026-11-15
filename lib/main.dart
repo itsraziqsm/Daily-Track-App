@@ -8,26 +8,33 @@ import 'providers/finance_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/target_provider.dart';
 import 'screens/shell_screen.dart';
+import 'services/app_lock.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/launch_splash.dart';
+import 'widgets/lock_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
   await NotificationService.instance.init();
   final themeMode = await ScheduleProvider.readThemeMode();
-  runApp(GroUApp(themeMode: themeMode));
+  // Dibaca sebelum frame pertama, supaya isi yang dikunci tidak sempat tampil.
+  final lock = AppLock();
+  await lock.load();
+  runApp(GroUApp(themeMode: themeMode, lock: lock));
 }
 
 class GroUApp extends StatelessWidget {
   final ThemeMode themeMode;
-  const GroUApp({super.key, this.themeMode = ThemeMode.system});
+  final AppLock? lock;
+  const GroUApp({super.key, this.themeMode = ThemeMode.system, this.lock});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => lock ?? AppLock()),
         ChangeNotifierProvider(create: (_) => ScheduleProvider(themeMode: themeMode)),
         ChangeNotifierProvider(create: (_) => FinanceProvider()),
         // Pengingat agenda dihitung pada zona waktu aplikasi, jadi ikut
@@ -56,6 +63,9 @@ class GroUApp extends StatelessWidget {
           locale: const Locale('id', 'ID'),
           supportedLocales: const [Locale('id', 'ID')],
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          // Di atas Navigator, supaya layar kunci juga menutup halaman yang
+          // sedang dibuka.
+          builder: (context, child) => AppLockOverlay(child: child!),
           home: home,
         ),
         child: const LaunchSplash(child: ShellScreen()),

@@ -134,7 +134,34 @@ flutter build apk --release
 cp build/app/outputs/flutter-apk/app-release.apk GroU.apk
 ```
 
-## 4. Setelah itu
+## 4. Biometrik (sidik jari / wajah)
+
+Autentikasi dengan **kode** langsung jalan tanpa penyesuaian. **Biometrik** butuh
+dua perubahan di folder `android/`. Tanpanya aplikasi tetap aman dipakai, hanya
+saja toggle Biometrik di Pengaturan → Autentikasi tidak bisa dinyalakan.
+
+**a.** Di `android/app/src/main/kotlin/.../MainActivity.kt`, ganti
+`FlutterActivity` menjadi `FlutterFragmentActivity` (dialog biometrik sistem
+membutuhkannya):
+
+```kotlin
+package com.example.jadwal_harian   // biarkan baris package seperti aslinya
+
+import io.flutter.embedding.android.FlutterFragmentActivity
+
+class MainActivity : FlutterFragmentActivity()
+```
+
+**b.** Di `android/app/src/main/AndroidManifest.xml`, tambahkan izin di samping
+izin notifikasi (di dalam `<manifest>`, di luar `<application>`):
+
+```xml
+<uses-permission android:name="android.permission.USE_BIOMETRIC" />
+```
+
+Lalu build ulang penuh (`flutter clean`, `flutter run`), bukan hot restart.
+
+## 5. Setelah itu
 
 ```bash
 flutter clean

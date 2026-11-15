@@ -9,6 +9,8 @@ import '../providers/finance_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/number_format.dart';
 import '../widgets/finance_sheets.dart';
+import '../services/app_lock.dart';
+import '../widgets/lock_screen.dart';
 import '../widgets/section_parts.dart';
 import 'wallet_screen.dart';
 
@@ -64,9 +66,14 @@ class _FinanceTabState extends State<FinanceTab> {
     });
   }
 
-  void _openWallet(Month month) {
+  Future<void> _openWallet(Month month) async {
+    if (!await ensureUnlocked(context, LockArea.wallet) || !mounted) return;
     setState(() => _walletButton = false);
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => WalletScreen(month: month)));
+    // Tetap dibungkus: bila aplikasi terkunci lagi saat halaman ini terbuka,
+    // isinya ikut tertutup.
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => LockedArea(area: LockArea.wallet, page: true, child: WalletScreen(month: month)),
+    ));
   }
 
   @override

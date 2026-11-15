@@ -3,12 +3,15 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/schedule_provider.dart';
+import '../services/app_lock.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_time.dart';
+import '../widgets/lock_screen.dart';
 import '../widgets/theme_mode_sheet.dart';
 import '../widgets/timezone_sheet.dart';
 import '../widgets/tolerance_sheet.dart';
+import 'auth_settings_screen.dart';
 import 'cancellation_log_screen.dart';
 import 'manage_templates_screen.dart';
 import 'stats_screen.dart';
@@ -25,6 +28,7 @@ class SettingsScreen extends StatelessWidget {
     final provider = context.watch<ScheduleProvider>();
     final active = provider.activeTemplate;
     final cancelled = provider.cancelledLogs.length;
+    final lock = context.watch<AppLock>();
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -140,6 +144,21 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => _toggle(context, 'night'),
           ),
           const SizedBox(height: 26),
+          Text('KEAMANAN', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
+          const SizedBox(height: 11),
+          _LinkRow(
+            label: 'Autentikasi',
+            sub: switch (lock.enabled ? lock.scope : LockScope.none) {
+              LockScope.none => 'Tidak aktif · kunci dengan kode atau biometrik',
+              LockScope.all => 'Semua dikunci${lock.biometricEnabled ? ' · biometrik aktif' : ''}',
+              LockScope.selected => '${[for (final a in LockArea.values) if (lock.areas.contains(a)) a.label].join(', ')}${lock.biometricEnabled ? ' · biometrik aktif' : ''}',
+            },
+            // Saat kunci aktif, pengaturannya sendiri ikut dilindungi supaya
+            // tidak bisa dimatikan orang lain.
+            guard: () => lock.enabled ? showUnlockScreen(context, reason: 'Buka pengaturan autentikasi') : Future.value(true),
+            builder: (_) => const AuthSettingsScreen(),
+          ),
+          const SizedBox(height: 26),
           Text('LAINNYA', style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.inkMuted)),
           const SizedBox(height: 11),
           _LinkRow(
@@ -183,13 +202,19 @@ class _LinkRow extends StatelessWidget {
   final String sub;
   final WidgetBuilder builder;
 
-  const _LinkRow({required this.label, required this.sub, required this.builder});
+  /// Dijalankan sebelum layar dibuka; layar batal dibuka bila hasilnya false.
+  final Future<bool> Function()? guard;
+
+  const _LinkRow({required this.label, required this.sub, required this.builder, this.guard});
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: builder)),
+      onTap: () async {
+        if (guard != null && !await guard!()) return;
+        if (context.mounted) Navigator.of(context).push(MaterialPageRoute(builder: builder));
+      },
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),

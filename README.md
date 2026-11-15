@@ -9,6 +9,14 @@ Tampilan mengikuti desain "Daily Track" (handoff dari claude.ai/design); isi tem
 - **Hari Ini** — timeline vertikal dari template yang berlaku untuk hari itu. Headernya menempel
   (`SliverPersistentHeader`): saat daftar digulung, tanggal dan chip hari beruntun melipat hingga
   tersisa kartu progresnya saja, dan kegiatan lewat di belakangnya dengan bayangan tipis.
+- **Autentikasi** — Pengaturan → Keamanan → Autentikasi. Bawaannya tidak ada kunci; bisa dipilih
+  **Semua** (layar kunci tiap aplikasi dibuka) atau **Pilih bagian** (Keuangan, Dompet Saya,
+  Target, Agenda — boleh lebih dari satu). Metodenya kode 6 digit, ditambah biometrik opsional
+  dengan kode sebagai cadangan. Sekali dibuka, aplikasi tetap terbuka sampai ditinggal di latar
+  belakang lebih dari 1 menit. Lima kali salah kode → dikunci sementara 30 detik, bertambah tiap
+  kesalahan berikutnya. Saat kunci aktif, halaman Autentikasi sendiri juga butuh kode. Kode
+  disimpan sebagai hash SHA-256 bergaram; ini kunci tampilan, data di database tidak dienkripsi.
+  Biometrik di Android butuh penyesuaian di `ANDROID_SETUP.md` bagian 4.
 - **Navigasi** — empat tab ikon di bawah (Hari Ini, Agenda, Target, Keuangan), bisa diketuk
   atau digeser kanan-kiri. **Pengaturan** dibuka dari ikon profil di kanan lonceng notifikasi.
 - **Keuangan** — pengeluaran bulanan dan rancangan tabungan:
@@ -139,12 +147,14 @@ lib/
     stats_screen.dart            # Pengaturan → Lainnya → Statistik
     cancellation_log_screen.dart # Pengaturan → Lainnya → Log pembatalan
     settings_screen.dart         # Pengaturan (dibuka dari ikon profil)
+    auth_settings_screen.dart    # Pengaturan → Autentikasi
     finance_tab.dart             # Keuangan: dompet, pengeluaran tetap, transaksi
     wallet_screen.dart           # Dompet Saya: tabungan & proyeksi, per kategori, rata-rata
     notification_feed_screen.dart
   widgets/                       # ActivityTile, sheet alasan batal / zona waktu / tema, ring chart
   theme/app_theme.dart           # palet terang & gelap (ThemeExtension) dan ThemeData
   services/notification_service.dart  # notifikasi lokal terjadwal
+  services/app_lock.dart         # kunci aplikasi: cakupan, kode (hash), biometrik, sesi
   utils/app_time.dart            # zona waktu aktif (WIB/WITA/WIT) & helper waktu
 assets/branding/                 # logo GroU + turunannya untuk ikon & splash
 tool/brand_assets.py             # membangkitkan turunan logo dari grou_source.png

@@ -25,7 +25,9 @@ import 'package:grou/providers/schedule_provider.dart';
 import 'package:grou/screens/cancellation_log_screen.dart';
 import 'package:grou/screens/manage_templates_screen.dart';
 import 'package:grou/screens/notification_feed_screen.dart';
+import 'package:grou/screens/auth_settings_screen.dart';
 import 'package:grou/screens/settings_screen.dart';
+import 'package:grou/services/app_lock.dart';
 import 'package:grou/screens/shell_screen.dart';
 import 'package:grou/screens/stats_screen.dart';
 import 'package:grou/screens/target_detail_screen.dart';
@@ -171,6 +173,7 @@ Future<void> _seedFinance(FinanceProvider finance) async {
 void main() {
   late ScheduleProvider provider;
   late FinanceProvider finance;
+  late AppLock lock;
   late AgendaProvider agenda;
   late TargetProvider targets;
 
@@ -196,6 +199,8 @@ void main() {
         agenda = AgendaProvider();
         await agenda.load();
         if (agenda.items.isEmpty) await _seedAgenda(agenda);
+        lock = AppLock();
+        await lock.load();
         finance = FinanceProvider();
         await finance.load();
         if (finance.firstMonth == null) await _seedFinance(finance);
@@ -219,6 +224,7 @@ void main() {
       });
       addTearDown(targets.dispose);
       addTearDown(finance.dispose);
+      addTearDown(lock.dispose);
       addTearDown(provider.dispose);
       addTearDown(agenda.dispose);
 
@@ -230,6 +236,7 @@ void main() {
             ChangeNotifierProvider.value(value: agenda),
             ChangeNotifierProvider.value(value: targets),
             ChangeNotifierProvider.value(value: finance),
+            ChangeNotifierProvider.value(value: lock),
           ],
           child: MaterialApp(
             navigatorKey: navigatorKey,
@@ -352,6 +359,37 @@ void main() {
       await tester.tap(find.byTooltip('Pengaturan'));
       await shot('4d_pengaturan');
       expect(find.byType(SettingsScreen), findsOneWidget);
+
+      // Pengaturan → Keamanan → Autentikasi, dengan kunci untuk Agenda dan
+      // Keuangan; kodenya dibuat langsung supaya tidak perlu diketik.
+      final settingsScroll = find.descendant(of: find.byType(SettingsScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('Autentikasi'), 200, scrollable: settingsScroll);
+      await tester.runAsync(() async {
+        await lock.setPin('246810');
+        await lock.setAreas({LockArea.agenda, LockArea.finance, LockArea.wallet});
+        await lock.setScope(LockScope.selected);
+        lock.lockNow();
+      });
+      await tester.pumpAndSettle();
+      await shot('4g_pengaturan_keamanan');
+      navigatorKey.currentState!.push(MaterialPageRoute(builder: (_) => const AuthSettingsScreen()));
+      await shot('4h_autentikasi');
+      expect(find.text('Pilih bagian'), findsOneWidget);
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Agenda'));
+      await shot('4i_agenda_terkunci');
+      expect(find.text('Agenda terkunci'), findsOneWidget);
+      await tester.tap(find.text('Buka'));
+      await shot('4j_layar_kode');
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      // Kembalikan tanpa kunci untuk layar-layar berikutnya.
+      await tester.runAsync(() => lock.setScope(LockScope.none));
+      await tester.tap(find.byTooltip('Pengaturan'));
+      await tester.pumpAndSettle();
 
       // Toleransi terlambat bisa diubah dari Pengaturan dan langsung berlaku.
       final settingsList = find.descendant(of: find.byType(SettingsScreen), matching: find.byType(Scrollable)).first;
