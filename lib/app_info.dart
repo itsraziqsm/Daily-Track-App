@@ -4,5 +4,5 @@
 /// Ditulis di kode Dart, bukan dibaca dari paket Android, supaya angka yang
 /// tampil di Pengaturan membuktikan kode Dart terbaru benar-benar ikut
 /// terkompilasi ke APK.
-const appVersion = '1.2.2';
-const appBuild = 4;
+const appVersion = '1.2.3';
+const appBuild = 5;

@@ -326,8 +326,14 @@ void main() {
       expect(find.text('Dompet Saya'), findsNothing);
       final titleTop = tester.getTopLeft(find.text('Keuangan')).dy;
       final pull = await tester.startGesture(tester.getCenter(find.textContaining('PROYEKSI')));
-      for (var i = 0; i < 12; i++) {
-        await pull.moveBy(const Offset(0, 30));
+      // Seperti jari sungguhan: bergetar sedikit (naik dan ke samping) saat
+      // menyentuh, lalu menarik turun pelan-pelan.
+      for (final jitter in const [Offset(0, -2), Offset(1.5, -1), Offset(-1, 1), Offset(0.5, 2)]) {
+        await pull.moveBy(jitter);
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      for (var i = 0; i < 60; i++) {
+        await pull.moveBy(Offset(i.isEven ? 0.4 : -0.4, 4));
         await tester.pump(const Duration(milliseconds: 16));
       }
       await tester.pump();
@@ -350,6 +356,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.state<ScrollableState>(financeList).position.pixels, greaterThan(0));
       tester.state<ScrollableState>(financeList).position.jumpTo(0);
+      await tester.pumpAndSettle();
+
+      // Geser ke samping dari atas kartu tetap berpindah tab.
+      await tester.drag(find.textContaining('PROYEKSI'), const Offset(300, 12));
+      await tester.pumpAndSettle();
+      final pages = (tester.widget(find.byType(PageView)) as PageView).controller!;
+      expect(pages.page, 2, reason: 'geser kanan dari Keuangan membuka tab Target');
+      await tester.tap(find.byTooltip('Keuangan'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Dompet Saya'));

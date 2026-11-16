@@ -497,18 +497,27 @@ class _WalletButton extends StatelessWidget {
   }
 }
 
-/// Pengenal seret vertikal yang hanya mengklaim tarikan ke bawah. Bila jari
-/// lebih dulu bergerak ke atas, ia mundur dari arena sehingga daftar di
-/// belakangnya tetap bisa digulir seperti biasa.
+/// Pengenal seret vertikal yang hanya mengklaim tarikan ke bawah.
+///
+/// Arah diputuskan dari gerakan bersih sejauh [_decideAfter], bukan dari
+/// gerakan pertama, karena jari sungguhan selalu bergetar sedikit saat
+/// menyentuh layar. Tarikan yang jelas ke bawah langsung diklaim, lebih awal
+/// dari ambang gulir daftar di belakangnya, sehingga dompet menang. Gerakan
+/// ke atas atau ke samping dilepas: daftar tetap bisa digulir dan tab tetap
+/// bisa digeser.
 class _DownwardDragRecognizer extends VerticalDragGestureRecognizer {
   _DownwardDragRecognizer({super.debugOwner});
 
-  double _dy = 0;
+  /// Jarak bersih sebelum arah diputuskan. Jauh di bawah ambang gulir
+  /// (kTouchSlop, 18 px) supaya dompet sempat mengklaim lebih dulu.
+  static const _decideAfter = 6.0;
+
+  Offset _moved = Offset.zero;
   bool _decided = false;
 
   @override
   void addAllowedPointer(PointerDownEvent event) {
-    _dy = 0;
+    _moved = Offset.zero;
     _decided = false;
     super.addAllowedPointer(event);
   }
@@ -516,14 +525,20 @@ class _DownwardDragRecognizer extends VerticalDragGestureRecognizer {
   @override
   void handleEvent(PointerEvent event) {
     if (!_decided && event is PointerMoveEvent) {
-      _dy += event.delta.dy;
-      if (_dy < -1) {
+      _moved += event.delta;
+      if (_moved.distance >= _decideAfter) {
         _decided = true;
-        resolve(GestureDisposition.rejected);
-        stopTrackingPointer(event.pointer);
+        final downward = _moved.dy > 0 && _moved.dy >= _moved.dx.abs();
+        if (!downward) {
+          resolve(GestureDisposition.rejected);
+          stopTrackingPointer(event.pointer);
+          return;
+        }
+        super.handleEvent(event);
+        // Klaim sekarang, sebelum daftar mencapai ambang gulirnya.
+        resolve(GestureDisposition.accepted);
         return;
       }
-      if (_dy > 1) _decided = true;
     }
     super.handleEvent(event);
   }
