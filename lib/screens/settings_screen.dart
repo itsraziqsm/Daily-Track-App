@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../app_info.dart';
 import '../providers/schedule_provider.dart';
 import '../services/app_lock.dart';
 import '../services/notification_service.dart';
@@ -171,6 +172,13 @@ class SettingsScreen extends StatelessWidget {
             label: 'Log pembatalan',
             sub: cancelled == 0 ? 'Belum ada kegiatan yang dibatalkan' : '$cancelled kegiatan dibatalkan · per hari',
             builder: (_) => const CancellationLogScreen(),
+          ),
+          const SizedBox(height: 28),
+          Center(
+            child: Text(
+              'GroU $appVersion · build $appBuild',
+              style: TextStyle(fontFamily: AppFonts.subtitle, fontSize: 11.5, fontWeight: FontWeight.w600, color: c.inkMuted2),
+            ),
           ),
         ],
       ),
